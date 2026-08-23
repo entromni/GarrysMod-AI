@@ -1129,7 +1129,7 @@ if(Power)
             if(clk("Scan")) 
             {
                 
-                if(AnyfriendlyAI:id() == Base:id()) { print("RAPE MAXX"), AnyfriendlyAI = noentity() } 
+                if(AnyfriendlyAI:id() == Base:id()) { print("MAXX"), AnyfriendlyAI = noentity() } 
                 
                 if(Target:isValid()) 
                 { local Temp_Radar_Distance = (holoEntity(587):pos():distance(Target:massCenter()) + (Target:aabbWorldSize():x() + Target:aabbWorldSize():y() + Target:aabbWorldSize():z()))
@@ -1185,7 +1185,7 @@ if(Power)
             
                     local Temp_Target = findClosest(Self:pos())
             
-                    # if(Temp_Target:acfIsAmmo()) { print("RAPE"), print(Temp_Target:acfAmmoType()) }
+                    # if(Temp_Target:acfIsAmmo()) { print("WTF LMAO"), print(Temp_Target:acfAmmoType()) }
             
                     if((Temp_Target:acfIsAmmo()) & (Temp_Target:acfAmmoType() == "Refill")) 
                     { Targetlist_2:pushEntity(Temp_Target), findExcludeEntities(Targetlist_2), Target = noentity() } 
@@ -1566,7 +1566,7 @@ if(Power)
                     # local AI_Team_Members_Keys = AI_Team_Members[1, table]:keys()
                     
                     if(Teams[3, table]:count()) 
-                    { # print("RAPE")
+                    { # print("hoe god")
                         local Temp_Index_2 = 0
                         local Temp_True_Or_False = 0
                         
@@ -1996,7 +1996,7 @@ if(Power)
                 
             elseif(Weird) 
             {  
-                A = 1, D = 0 # print("RAPE!!!!!!!!!!!!!")
+                A = 1, D = 0 # print("please oh god oh god!!!!!!!!!!!!!")
                 # print(vec2(A, D))
             }
             
@@ -2062,7 +2062,7 @@ if(Power)
                         if(Target_Preference == 1) { A = 1, D = 0, Current_Turn_Direction = 1 } 
                         else { A = 0, D = 1, Current_Turn_Direction = -1 }
                         Last_Turn_Direction = Target_Preference, Turn_Hold_Timer = 10
-                        # print("RAPE")
+                        # print("lmao")
                     } else { # if(Turn_Hold_Timer > 0) {
                         CanRandomlyTurn = 1
                         
@@ -2079,7 +2079,7 @@ if(Power)
                     if(Target_Preference == 1) { A = 1, D = 0, Current_Turn_Direction = 1 } 
                     else { A = 0, D = 1, Current_Turn_Direction = -1 }
                     Last_Turn_Direction = Target_Preference, Turn_Hold_Timer = 10
-                    # print("RAPE")
+                    # print("asshole")
                 } else { # if(Turn_Hold_Timer > 0) {
                     CanRandomlyTurn = 1
                     
@@ -2294,7 +2294,7 @@ if(Power)
             { if(!Neutral_Pivot) 
                 { # print("FUCK YOUUUUU!!!!!") 
                     
-                    # print("RAPE")
+                    # print("usurper")
                     
                     # if(D) 
                     if((D&W)|(A&S))
@@ -2323,7 +2323,7 @@ if(Power)
                         LTransfer["Right Brake",number]=0
                      }
                  } elseif(Neutral_Pivot) 
-                { # print("NIGGER!!!!!") 
+                { # print("OMFG!!!!!") 
                     if((D&W)|(A&S))
                     # if(D)
                     { 
