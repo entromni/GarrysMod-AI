@@ -1,0 +1,2447 @@
+@name Autonomous Fighting Vehicle v1.3.4c
+
+## Outputs and inputs:
+
+@inputs [Turret, Haxis, Vaxis, Base]:entity # [PRINT]:number
+@persist [Turret, Haxis, Vaxis, Base]:entity
+
+@inputs [Base]:entity
+
+# @inputs [EngineHeat_1, EngineHeat_2, EngineHeat_3, GunHeat]:number
+@inputs [MuzzleVel]:number
+# @inputs [W1, W2, W3, W4]:entity
+# @inputs [CVT Fuel]:wirelink
+
+@inputs [LTransfer, RTransfer]:wirelink
+
+@outputs [Power]:number [Throttle, Gear, Gear_2, Gear_O1, Gear_O2, Brake]:number 
+@outputs [TurretFire, SmokeLaunch, ActivateTurret]:number
+
+@outputs [W A S D]:number
+@persist [W A S D]:number
+
+@outputs [Output, PREDICTION]:number [Scannerlight]:vector [Lightscan]
+
+@outputs [Turret]:entity
+@persist [Turret]:entity
+
+@outputs [Constant, Damping]:number
+@persist [Constant, Damping]:number
+
+@outputs [OpsCPUus]:vector2
+
+### Variables:
+
+@persist [Time_Till_Forget]:number
+
+@persist [Reverse_Gear, Default_Gear]:number
+@persist [Use_Transfers_As_Reverse, Use_8_Speed_As_Reverse]:number
+
+@persist [True_Speed]:number
+
+@persist [RandomizedMovement, CanRandomlyTurn, RandomlyTurning]:number
+@persist [TURN, HUNT]:number 
+@persist [ManualOverRide]:number 
+@persist [RandomT1]:number
+@outputs [FRONT, BACK, LEFT, RIGHT, GROUNDCHECK_Front, GROUNDCHECK_Back]:number
+
+@persist [Length]:number
+@persist [RangerLeftHullSize, RangerRightHullSize, RangerFrontHullSize, RangerBackHullSize, RangerGroundCheckHullSize]:vector
+@persist [RangerLeft, RangerRight, RangerFront, RangerBack, RangerGroundCheck_Front, RangerGroundCheck_Back]:ranger [LOSranger]:ranger
+@persist [ShowRaycastHolos]:number Reversing
+
+@persist [LOS_Filter]:array
+
+@persist [Targeting, Movement, Follow, Aim, Protect Is_Whitelisted]:number
+@persist [I, B]
+@persist [Self, Insight]:entity
+
+# @persist [GearBypass]
+
+@persist [RadarRanger]:ranger [RadarBase]:entity [RadarBase_Pos]:vector
+@persist [RadarRadius, RadarDistance]:number
+@persist [RadarScanRotationRate, RadarScanRotation, RADAR_PITCH_MAX]:number
+# @persist [RadarTargetingAngle]:angle
+
+@outputs [Gun_Target_Bearing]:number [Find_Array]:array
+
+# @persist [HaxisYaw HaxisPitch HaxisRoll]:number [VaxisYaw]:number
+@persist [VaxisAngle, HaxisAngle, TurretAng]:angle
+@persist [HuntY, Normalized_HuntY, Clamped_Bearing]:number Whitelist:table 
+@outputs [Target]:entity 
+@persist [Target]:entity 
+@persist [Prev_Target_Pos]:vector
+
+# @persist [TurretAngle TurretAngleOffset]:angle
+# @persist [DistanceTargetPitchOffset]:number
+
+@persist [MaxElevation, MaxDepression]:number
+
+@persist [Remembrance]:number
+
+@persist [Distance, Complete_Theshold_Dist, PreferredFollowRadius, PreferredFollowRadius_Threshold, Friendly_AI_PreferredFollowRadius, Friendly_AI_PreferredFollowRadius_Threshold]:number 
+@persist [Flankpos]:vector [Flank]:number
+
+@outputs [FollowDistance, Friendly_AI_FollowDistance]:number
+
+@outputs [Components, Components_2, Components_3, Targetlist, Targetlist_2, Components_RadarRanger_LOS_Filter]:array
+@persist [Components, Components_2, Components_3, Targetlist, Targetlist_2, Components_RadarRanger_LOS_Filter]:array
+
+@persist [Weights]:array [Bias, Lr]:number
+
+@persist [Teams, AI_Team_Members Scouts]:gtable [HasTeam]:number # [Player]:entity
+@outputs [AnyfriendlyAI_Storage]:table [AnyfriendlyAI_Index]:number [AnyfriendlyAI]:entity
+
+@outputs [WayPoint]:vector [WayPoint_Exists]:number [WayPoint_List]:array
+
+# @persist [Node_map_index]:number # [Node_Map]:array
+
+@persist [AI_Identification]:string [CommandPrefix]:string
+
+# @persist [Team_Target_List]:array
+
+@persist [AI_Team_Members_Lock]:number
+
+@persist [TempVar_1, Components_3_Completed]:number
+
+# @persist [Channel Name Reciever_TeamName TeamName]:string [Rank RankList]:table
+# @persist [Found_Target]:entity
+
+@outputs [AimPos]:vector
+@persist [TarVel GunPos]:vector [DT Dist TT]:number [AimPos]:vector
+@persist [Slope Intercept MuzzleVel]:number
+
+@persist [Circle_NewPosition]:vector
+
+@persist [Engines]:array [Is_Locked]:number
+@persist [Average_RPM, Powerband_min, Powerband_max, Engine_speed]:number
+@persist [CVT_Averages]:array
+
+@persist [CVT_Ratio, Clutch]:number
+@outputs [CVT_Ratio, Clutch]:number
+
+@persist [Wheel_Model_List]:table 
+@persist [Wheels]:table
+
+@persist [Wheel_Inertia, Base_Inertia]:vector
+
+@persist [Left_Ang, Right_Ang, Front_Ang, Back_Ang]:number
+
+@persist [Alphabet]:table
+
+@persist [Hivemind_Insight_Status]:table 
+@persist [Hivemind_Insight_Status_Keys]:array
+
+@persist [Ang_Ignore_Threshold]:number
+
+@persist [Can_Reset]:number
+
+@persist [SteeringBrakes, Brake_Force]:number
+
+@persist [Minimum_CVT_Ratio, Maximum_CVT_Ratio, CVT_Ratio_RPM_Multiplier, CVT_Ratio_Speed_Multiplier, FullClutchRPM, NoClutchRPM]:number
+
+@persist [Desired_speed]:number
+@persist [True_Speed_Normalized, Ang_Speed]
+@persist [Speed, Speed2, Speed3, Speed4, Speed5, Speed6, Speed7]:number
+@outputs [Speed_UnConverted, Speed]:number
+@persist [Default_Desired_Speed]:number
+
+@persist [Found_Water]:number
+
+@persist [Turn_Lock]:table
+@persist [Delta_Lock]:number
+
+@persist [Deltas_Array]:table
+@persist [Max_Deltas, Delta_Threshold]:number
+
+@persist [Brake_Speed_Threshold, Use_Freeze_Brakes, Brake_Status]:number
+
+@persist [Overseer]:entity
+@persist [Overseer_System]:gtable
+
+@persist [Force_Target]:number
+@persist [Overseer_TargetTo]:vector
+
+# @persist [Cur_Command]:string
+@persist [Commands]:table
+
+@persist [Temp_Vec2]:vector2
+
+@persist [Invert_Reverse_Steering]:number
+
+@persist [Pos_Switch]:vector
+
+@inputs [Ballistics_Table_Elevation_Array, Ballistics_Table_Travel_Time_Array]:table
+@persist [Ballistics_Table_Elevation_Array, Ballistics_Table_Travel_Time_Array]:table
+
+@persist [AddToTeam_Bind]:string
+@persist [Can_AddToTeam]:number
+
+@persist [Guns]:table
+
+@persist [Neutral_Pivot_Threshold_Speed_Minimum, Neutral_Pivot_Threshold_Speed_Maximum, Neutral_Pivot]:number
+
+@persist [Last_Turn_Direction, Turn_Hold_Timer, Steering_Confidence]:number
+
+# @persist [Self_Right]:vector
+
+@persist [Cur_Command]:string
+
+@outputs [TarPos]:vector
+@persist [TarPos]:vector
+
+@outputs [RepeatOnFinish, ForceCancel]:number
+@persist [RepeatOnFinish, ForceCancel]:number
+
+@persist [Frequency, Movement_Frequency, Ray_Frequency, Aim_Frequency, Scan_Frequency]:number
+
+@persist [Oscillation_Lock_Timer, Oscillation_Threshold]:number [Oscillation_History]:table
+@persist [Consistent_Rotation_Timer, Consistent_Rotation_Timer_Delay]:number
+@persist [Consistent_Rotation_Timer_Unlock, Consistent_Rotation_Timer_Unlock_Delay]:number
+@persist [Oscillation_History_Remove_Timer, Oscillation_History_Remove_Delay, Oscillation_Lock_Timer_Delay]:number
+@persist [RandomTurnState, RandomTurnTimer, RandomTurnDirection, RandomTurnDuration]:number
+
+    ##---## Author: Zan ##---##
+    ##---## Author: Zan ##---##
+    ##---## Author: Zan ##---##
+
+#### Data Initialization/Settings: ####---------------------------------------------------------------------------####
+#### Data Initialization/Settings: ####---------------------------------------------------------------------------####
+#### Data Initialization/Settings: ####---------------------------------------------------------------------------####
+
+if(first() || dupefinished() || duped()) {
+
+    # Whitelist = table("STEAM_0:0:441199989"=1)
+    Whitelist = table()
+      
+    Self = entity(),
+
+    Overseer = owner(),
+
+    Commands = table(
+    "TogglePower"=1,
+    "LookAt"=2,
+    "Goto"=2,
+    "ToggleFollow"=4
+    ),
+    
+    AddToTeam_Bind = "pad_1",
+    
+    Overseer_System = gTable("Overseer_System", 1) 
+    Overseer_System["Commands", table] = table(),
+    Overseer_System["Commands", table]["AI_Individual_Commands_Data", table] = table(),
+    
+    Cur_Command = "None"
+    
+    Alphabet = table("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z")
+        
+    CommandPrefix = "!"
+        
+    AI_Identification = (Alphabet[round(random(0,Alphabet:count())), string] + round(random(0,9)):toString() + Alphabet[round(random(0,Alphabet:count())), string] + round(random(0,9)):toString() + Alphabet[round(random(0,Alphabet:count())), string] + round(random(0,9)):toString())
+    
+    Length = 1000
+    
+    Frequency = 100
+    
+    Movement_Frequency = 70
+    Ray_Frequency = 70
+    Aim_Frequency = 70
+    Scan_Frequency = 100  
+    
+    Targeting = 1
+    Movement = 1
+    ShowRaycastHolos = 0
+        
+    RangerLeftHullSize = vec(60, 60, 6)
+    RangerRightHullSize = vec(60, 60, 6)
+    RangerFrontHullSize = vec(90, 90, 6)
+    RangerBackHullSize = vec(90, 90, 6)
+    RangerGroundCheckHullSize = vec(25, 25, 6)
+    
+    RandomizedMovement = 1
+    
+    Wheel_Model_List = table("models/sprops/trans/miscwheels/tank20.mdl"=1, "models/sprops/trans/miscwheels/tank15.mdl"=2, "models/sprops/trans/miscwheels/wt2_sprocket_12.mdl"=3)
+    Wheel_Inertia = vec(10, 4, 10)
+    
+    Base_Inertia = vec(800, 1000, 300)
+    
+    Wheels = table()
+    
+    Components = entity():getConnectedEntities()
+    
+    Components_RadarRanger_LOS_Filter = Components
+    
+    RadarScanRotation = 0
+    
+    Constant = 35000
+    Damping = 1000
+    RadarRadius = 60
+    
+    HasTeam = 1
+    
+    Time_Till_Forget = 5300
+    
+    SteeringBrakes = 0.35
+    Brake_Force = 0.45
+    
+    TempVar_1 = 0
+
+    Oscillation_Threshold = 10
+    Oscillation_History_Remove_Delay = 10
+    Oscillation_Lock_Timer_Delay = 30
+    Consistent_Rotation_Timer_Unlock_Delay = 35
+    Consistent_Rotation_Timer_Delay = 80
+    
+    MaxElevation = 15 # Max angle the gun can look up.
+    MaxDepression = 25 # Max angle the gun can look down.
+    Ang_Ignore_Threshold = 48
+
+    PreferredFollowRadius = 700
+    PreferredFollowRadius_Threshold = 500
+    
+    Friendly_AI_PreferredFollowRadius = 3500
+    Friendly_AI_PreferredFollowRadius_Threshold = 350
+    
+    Complete_Theshold_Dist = 600
+    
+    RadarScanRotationRate = 4
+    RADAR_PITCH_MAX = 30
+    
+    Gear = 1
+    Default_Gear = 1
+    Reverse_Gear = 2
+    
+    Use_8_Speed_As_Reverse = 0
+    Use_Transfers_As_Reverse = 1
+    Invert_Reverse_Steering = 0
+    
+    Brake = 0
+    
+    Neutral_Pivot_Threshold_Speed_Maximum = 20, 
+    Neutral_Pivot_Threshold_Speed_Minimum = 10, 
+        
+    # If you use multiple engines with varying RPM powerbands then I can not help you.
+    # VVV (If you have multiple do not add them, just do it as if it was an individual engine) VVV
+    Powerband_min = 4890,  # Minimum RPM of the engine's powerband
+    Powerband_max = 6800,  # Maximum RPM of the engine's powerband
+    # Powerband_max = 18215,  # Maximum RPM of the engine's powerband
+        
+    Minimum_CVT_Ratio = 0.13, # Name is self explanatory.
+    Maximum_CVT_Ratio = 0.9, # Name is self explanatory.
+    
+    CVT_Ratio_RPM_Multiplier = 0.55, # CVT Ratio calculation offset by RPM.
+    CVT_Ratio_Speed_Multiplier = 0.55,  # CVT Ratio calculation offset by speed. 
+    # Lower values mean the CVT Ratio increase and decrease is more Gradual.
+    
+    # FullClutchRPM = (Powerband_min / 2), # The RPM of which clutch will be in full effect.
+    # NoClutchRPM = Powerband_min, # The RPM of which clutch will not be used.
+    FullClutchRPM = 4500, # The RPM of which clutch will be in full effect.
+    NoClutchRPM = 5200, # The RPM of which clutch will not be used.
+    # Clutches help for when your engine is struggling or is not using any torque when it should.
+    
+    # VVV The below is for an 8-speed gearbox VVV
+    
+    # Note: "Gear_2" Is for the 8-speed and "Gear" is for the CVT.
+    # Note: The desired speed is dynamic to your current speed and is also used in the CVT_Ratio calculations.
+    # Note: Therefore regardless if you are using both an 8-speed and a CVT gearbox, you may still have to tweak each Speed 2 - 8 value below.
+    
+    Desired_speed = 60,  # Desired top vehicle speed in mph
+    
+    Speed2 = 10, 
+    Speed3 = 20, 
+    Speed4 = 30, 
+    Speed5 = 40, 
+    Speed6 = 50, 
+    Speed7 = 60, 
+    
+    Default_Desired_Speed = Desired_speed
+
+    Lightscan = 0
+    Scannerlight = vec(255, 255, 255)
+    
+    TarPos = vec(0)
+    GunPos = vec(0)    
+    
+    Temp_Vec2 = vec2(1)
+    
+    Turn_Lock = table(0, 0)
+
+    Neutral_Pivot_Threshold_Speed_Maximum = 15
+    Neutral_Pivot_Threshold_Speed_Minimum = 10
+
+    Oscillation_History_Remove_Timer = Oscillation_History_Remove_Delay
+    Consistent_Rotation_Timer = Consistent_Rotation_Timer_Delay
+    Consistent_Rotation_Timer_Unlock = Consistent_Rotation_Timer_Unlock_Delay
+    Oscillation_Lock_Timer = Oscillation_Lock_Timer_Delay
+    Oscillation_History = table()
+    
+    RandomTurnState = 0
+    RandomTurnTimer = 0 
+    RandomTurnDirection = 0
+    RandomTurnDuration = 0 
+
+    Last_Turn_Direction = 0
+    Turn_Hold_Timer = 0
+    
+    SmokeLaunch = 0
+    Remembrance = 0
+    FollowDistance = 0
+    Distance = 0
+    ActivateTurret = 0
+    Protect = 0
+    Follow = 0
+    True_Speed = 0
+    Normalized_HuntY = 0
+    Clamped_Bearing = 0
+    Found_Water = 0
+    Is_Whitelisted = 0
+    RepeatOnFinish = 1 
+    ForceCancel = 0
+    
+    Neutral_Pivot = 0
+    
+    RandomT1 = 0
+    RandomlyTurning = 1
+    CanRandomlyTurn = 1
+    
+    Can_AddToTeam = 1
+    
+    TURN = 0
+    
+    Find_Array = array()
+    
+    LOS_Filter = array()
+    
+    TarPos = vec(0)
+    
+    # Self_Right = vec(0)
+    
+    WayPoint = vec(0)
+    WayPoint_Exists = 0
+    WayPoint_List = array()
+    
+    CVT_Averages = array()
+    Engines = array()
+    Clutch = 0
+        
+    Targetlist_2 = array()
+    
+    Guns = table()
+    
+    AnyfriendlyAI = noentity()
+    Target = noentity()
+    
+    Scouts = gTable("AI_Hud_Commands", 1)
+    Scouts[4, table] = table()
+    
+    Hivemind_Insight_Status = table()
+    Hivemind_Insight_Status_Keys = array()
+        
+    Force_Target = 0
+    
+    Can_Reset = 0
+    
+    Components_3 = array()
+    
+    Targetlist = array()
+
+    Overseer_TargetTo = vec(0)
+    
+    Max_Deltas = 8
+    Delta_Threshold = 6
+    Deltas_Array = table()
+    Delta_Lock = 0
+    
+    Is_Locked = -3
+    
+    if(HasTeam) 
+    { 
+    #
+        Components_3_Completed = 0
+    
+        Teams = gTable("AI_Team_1", 1)
+        
+        Teams[1, array] = array()
+        Teams[2, array] = array()
+        Teams[3, array] = array()
+        
+        Teams[3, table] = table()
+               
+        AI_Team_Members = gTable("AI_Team_1_Members", 1)
+        
+    #     AI_Team_Members[1, array] = array()
+        
+        # if(!AI_Team_Members[1, table]:count()) 
+        # {
+        AI_Team_Members[1, table] = table()
+        # }
+        
+        AnyfriendlyAI_Index = 0
+        # AI_Team_Members_Index = 0
+        AI_Team_Members_Lock = 0
+    
+    }
+
+    RIGHT = 1
+    LEFT = 1
+    A = 0, D = 0, B = 0
+    Lr = 0.1 #learning rate
+    Bias = 1 #value of bias
+    Weights = array(random(), random(), random())
+    #print(Weights)
+    
+    #print(Weights)
+    
+    Last_Turn_Direction = 0  # -1 = left, 1 = right, 0 = none
+    Turn_Hold_Timer = 0
+    Steering_Confidence = 0
+    
+    #[Vaxis:propNotSolid(0)
+    Haxis:propNotSolid(0)]#
+    
+    Base:propSetBuoyancy(0)
+    Base:propDrag(0)
+    Base:propInertia(Base_Inertia)
+        
+    holoCreate(1)
+    holoCreate(2)
+    holoCreate(3)
+    holoCreate(4) 
+    holoCreate(7) 
+    
+    holoCreate(401)     
+    holoCreate(417)      
+    
+    holoCreate(721)
+    holoCreate(722)
+    
+    holoCreate(586)
+    holoCreate(587)
+    
+    RadarBase = holoEntity(587)
+    
+    holoPos(587, Base:toWorld(vec(0, 0, 50)))
+    # holoParent(587, Base)
+    
+    RadarBase_Pos = RadarBase:pos()
+    
+    rangerPersist(0)
+    rangerFilter(Components)
+    rangerPersist(1)
+    RadarRanger = rangerOffset(10000, RadarBase_Pos, RadarBase:forward()) # RadarEntity = RadarRanger:entity() 
+    RadarDistance = RadarRanger:distance()
+    
+    rangerPersist(0)
+    
+    holoPos(586, RadarBase:toWorld(vec(RadarDistance, -12, 0)))
+    holoAng(586, RadarBase:angles() - ang(90, 0, 0))
+    
+    holoColor(587, vec(0, 255, 0))
+    holoColor(586, vec(255, 0, 0))
+    
+    holoModel(586, "models/sprops/misc/cones/size_4/cone_48x144.mdl")
+    holoScale(586, vec(RadarRadius/12, RadarRadius/12, RadarDistance/142))
+    
+    holoAlpha(1, 0)
+    holoAlpha(2, 0)
+    holoAlpha(3, 0)
+    holoAlpha(4, 0)
+    holoAlpha(7, 0)
+    holoAlpha(401, 0)
+    holoAlpha(417, 0)
+    holoAlpha(721, 0)
+    holoAlpha(722, 0)
+
+    holoAlpha(586, 0)
+    holoAlpha(587, 0)
+
+    function number vector:trueVec3Length()
+    {
+        return (This:x() + This:y() + This:z())
+    }
+    
+    function number vector:trueVec2Length()
+    {
+        return (This:x() + This:y())
+    }
+    
+    function distance_to_index(Distance:number, Max_distance:number, Array_Count:number) {
+        local Normalized = (Distance / Max_distance)
+        
+        local Index = floor(Normalized * (Array_Count - 1)) + 1
+        
+        return min(Array_Count, max(1, Index))
+    }
+
+    function number array:pushGetAvg(Number:number, Samples:number) {
+        if(This:count() > Samples) {
+            This:shift()
+        }
+        
+        This:pushNumber(Number)
+        
+        return This:average()
+    }
+
+    function number calculate_cvt_ratio(Current_speed:number, Ideal_Speed:number, Engine_rpm:number, Powerband_min:number, Powerband_max:number) 
+    {
+        
+        if(Engine_rpm < Powerband_min) 
+        {
+            return Minimum_CVT_Ratio 
+        } elseif(Engine_rpm > Powerband_max) 
+        {
+            return Maximum_CVT_Ratio
+        } else {
+            local Powerband_range = (Powerband_max - Powerband_min)
+            local Rpm_within_powerband = (Engine_rpm - Powerband_min)
+                        
+            local Ratio_rpm = ((CVT_Ratio_RPM_Multiplier) * (Rpm_within_powerband / Powerband_range))
+            
+            local Ratio_speed = ((CVT_Ratio_Speed_Multiplier) * (Current_speed / Ideal_Speed))
+            
+            local Final_ratio = max(Ratio_rpm, Ratio_speed)
+        
+            return Final_ratio
+        }
+        
+    }
+    
+    function detectOscillation() {
+        if(Oscillation_History:count() < Oscillation_Threshold) { return 0 }
+        
+        local Changes = 0
+        for(I = 2, Oscillation_History:count()) {
+            if(Oscillation_History[I, number] != Oscillation_History[I-1, number]) {
+                Changes++
+            }
+        }
+        
+        return (Changes >= 3)
+    }
+    
+    function updateOscillationHistory(Direction) {
+        Oscillation_History:pushNumber(Direction)
+        if(Oscillation_History:count() > Oscillation_Threshold) {
+            Oscillation_History:removeNumber(1)
+            # Oscillation_History = table()
+        }
+    }
+        
+    function number perceptron(X:array, Output:number, Predict:number) {
+            OutputP = 0
+            if (Predict == 1){
+                foreach(I:number, Value:number=X){
+                    OutputP += Value*Weights[I, number]
+                }
+                OutputP += Bias*Weights[Weights:count(), number]
+                return OutputP
+            } else {
+                foreach(I:number, Value:number=X){
+                    OutputP += Value*Weights[I, number]
+                }
+                OutputP += Bias*Weights[Weights:count(), number]
+                Error = Output - OutputP
+                foreach(I:number, Value:number=X){
+                    Weights[I, number] = Weights[I, number] + (Lr*Error*Value)
+                }
+                Weights[Weights:count(), number] = Weights[Weights:count(), number] + (Lr*Error*Bias)
+                return Error
+            }
+    }
+    
+    function vector entity:get_aim_pos() 
+    {
+        return This:aimPos()
+    }
+} elseif(Components_3:count() & Components:count() & Is_Locked != 1) 
+{
+    if(Is_Locked == -3) 
+    {
+        foreach(Temp_Index_1:number, Engine:entity=Components_3) 
+        { 
+            if(Engine:type() == "acf_engine") { Engines:pushEntity(Engine) } 
+            if(Temp_Index_1 >= Components_3:count()) { Is_Locked = -2, print("Engines Table Complete | Found: " + Engines:count():toString()), break }
+        }
+        
+        if(Is_Locked == -2) 
+        {         
+            foreach(Temp_Index_2:number, Wheel:entity=Components) 
+            {
+                if(Wheel:type() == "prop_physics" & Wheel_Model_List[Wheel:model(), number]) { Wheels:pushEntity(Wheel), Wheel:propInertia(Wheel_Inertia), Wheel:propSetBuoyancy(0), Wheel:propDrag(0) }
+                if(Temp_Index_2 >= Components:count()) { Is_Locked = -1, print("Wheels Table Complete | Found: " + Wheels:count():toString()), break }
+            }
+            
+            if(Is_Locked == -1) 
+            {
+                I = 0
+                while(I < 10) 
+                {
+                    # Train perceptron
+                    
+                    perceptron(array(0.39233632596442,0.16762585050069), 1, 0)
+                    perceptron(array(0.99999949526326,0.45710900470337), 0, 0)
+                    perceptron(array(0.21212606989933,0.99999966057359), 1, 0)
+                    perceptron(array(0.034481909188091,0.84807623103423), 1, 0)
+                    perceptron(array(0.99999967258184,0.32195874883168), 0, 0)
+                    perceptron(array(0.26891777078516,0.99999963927501), 1, 0)
+                    perceptron(array(0.99999978785417,0.21938599110773), 0, 0)
+                    perceptron(array(0.20990440166086,0.045841163577799), 0, 0)
+                    perceptron(array(0.99999987812547,0.60804732613576), 1, 0)
+                    perceptron(array(0.74327043512191,0.9999994432203), 1, 0)
+                    
+                    if(I >= 9) { Is_Locked = 0, break } else { I+=1 }
+                }
+                
+                if(Is_Locked == 0) 
+                {
+                    foreach(Temp_Index_3:number, Gun:entity=Components_3) 
+                    {
+                        if(Gun:type() == "acf_gun") { Guns:pushEntity(Gun) }
+                        if(Temp_Index_3 >= Components_3:count()) 
+                        { 
+                            Is_Locked = 1, 
+                            print("Guns Table Complete | Found: " + Guns:count():toString()), 
+                            Turret = Guns[1, entity], 
+                            break 
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[if(Is_Locked && changed(Is_Locked)) 
+{ 
+    Teams[1, array] = Teams[1, array]:add(Components_3)
+    
+    print(Teams[1, array]:count())
+    hint("Successfully added to team!", 3)
+}]#
+
+
+event chat(Ply:entity, Said:string, _:number) 
+{
+
+    TEMPLAR = Said:explode(" ")
+
+    if(Ply==owner() ? 1 : 0 ) 
+    { 
+        if(TEMPLAR[1, string] == CommandPrefix+"Activate"+AI_Identification) 
+        {
+            Power = 1, # AI_Identification = round(random(1,10))
+            hideChat(1)
+            print("Robot successfully activated. To deactivate this robot type 'PowerDown' followed by this code: "+AI_Identification)
+        }
+    }
+
+    if(Ply==owner() ? 1 : 0 ) 
+    { 
+        if(TEMPLAR[1, string] == CommandPrefix+"ActivateAll" ) 
+        {
+            Power = 1
+            hideChat(1)
+            print("All robots successfully activated")
+        }
+    }
+
+    if(Ply==owner() ? 1 : 0 ) 
+    { 
+        if(TEMPLAR[1, string] == CommandPrefix+"PowerDown"+AI_Identification) 
+        {
+            Power = 0, # AI_Identification = round(random(1,10))
+            hideChat(1)
+            print("Robot successfully powered down. To activate this robot type 'Activate' followed by this code: "+AI_Identification)
+        }
+    }
+
+    if(Ply==owner() ? 1 : 0 ) 
+    { 
+        if(TEMPLAR[1, string] == CommandPrefix+"DeactivateAll" ) 
+        {
+            Power = 0
+            hideChat(1)
+            print("All robots successfully deactivated")
+        }
+    }
+
+    if(Ply==owner() ? 1 : 0 ) 
+    { 
+        if(TEMPLAR[1, string] == CommandPrefix+"WipeTeams" ) 
+        {
+            print("Entities wiped: " + Teams[1, array]:count())
+            Teams[1, array] = array()
+    #        print(Teams[1, array]:count())
+    #        Teams[1, array]:clear()
+            hideChat(1)
+            print("Teams succesfully Whiped! | Left over: " + Teams[1, array]:count())
+        }
+    }
+    
+    if(Ply==owner() ? 1 : 0 ) 
+    { 
+        if(TEMPLAR[1, string] == CommandPrefix+"AddToTeam" ) 
+        {
+            if(Components_3_Completed == 1) 
+            {
+            
+                Teams[1, array] = Teams[1, array]:add(Components_3)#, print("NEW AI ADDED!")
+                print(Teams[1, array]:count())
+                print("Successfully added to team!")
+            } else { print("Failed to add to team!") }
+            hideChat(1)
+    #        print("Teams succesfully created!")
+        }
+    }
+
+    if(Power == 1) 
+
+    {
+
+    # Manual Over Ride (MOR)
+    
+        if(Ply==owner() ? 1 : 0 ) 
+        { 
+            if(TEMPLAR[1, string] == CommandPrefix+"MOR"+AI_Identification)
+            {
+                ManualOverRide = 1
+                hideChat(1)
+                print("Manual over-ride activated")
+            } 
+        }
+
+        if(Ply==owner() ? 1 : 0 ) 
+        { 
+            if(TEMPLAR[1, string] == CommandPrefix+"SetWayPoint") 
+            {
+                WayPoint_Exists = 1
+                
+                WayPoint_List:pushVector(round(Ply:pos()))
+                WayPoint = WayPoint_List[1, vector]
+                
+        #        holoCreate()
+                
+                if(WayPoint_List:exists(1)) 
+                {
+                    foreach(TempVar_2:number, TempVa_3:vector=WayPoint_List) 
+                    {  
+                        holoCreate(600+TempVar_2)  
+                        holoPos(600+TempVar_2, TempVa_3)  
+                        holoColor(600+TempVar_2, vec(255, 0, 0))
+                    }
+                }
+        
+                hideChat(1)
+                print("Set waypoint to: "+round(WayPoint):toString())
+            } 
+        }
+    
+        # Manual Over Ride All (MORA)
+        
+        if(Ply==owner() ? 1 : 0 ) 
+        { 
+            if(TEMPLAR[1, string] == CommandPrefix+"MORA") 
+            {
+                ManualOverRide = 1
+                hideChat(1)
+                print("Manual over-rided all robots")
+            }
+        }
+    
+        # Opposite of MOR: "Ease Of Controls" (EOC)
+            
+        if(Ply==owner() ? 1 : 0 ) 
+        { 
+            if(TEMPLAR[1, string] == CommandPrefix+"EOC"+AI_Identification)
+            {
+                ManualOverRide = 0, Follow = 0
+                hideChat(1)
+                print("Manual over-ride de-activated")
+        
+            }
+        }
+
+    }
+        
+    if(ManualOverRide == 1) 
+    {
+        if(Ply==owner() ? 1 : 0 ) 
+        { 
+            # Forces a singular robot follow you.
+            if(TEMPLAR[1, string] == CommandPrefix+"Follow"+AI_Identification)
+            {
+                Follow = 1
+                hideChat(1)
+                print("Robot is now following you...")
+
+            }
+
+        }
+            
+        if(Ply==owner() ? 1 : 0 ) 
+        { 
+            
+            # Makes all robots follow you.
+            if(TEMPLAR[1, string] == CommandPrefix+"FollowAll") 
+            {
+                Follow = 1
+                hideChat(1)
+                print("All robots are now following you...")
+
+            }
+
+        }
+            
+        if(Ply==owner() ? 1 : 0 ) 
+        { 
+            
+            # Stops all robots from following.
+            if(TEMPLAR[1, string] == CommandPrefix+"FollowAll") 
+            {
+                Follow = 1
+                hideChat(1)
+                print("All robots are now following you...")
+
+            }
+
+        }
+
+        if(Ply==owner() ? 1 : 0 ) 
+        { 
+                
+            # Disables targeting.
+            if(TEMPLAR[1, string] == CommandPrefix+"TargetingOff"+AI_Identification) 
+            {
+                Targeting = 0
+                hideChat(1)
+                print("Successfully disabled targeting")
+
+            }
+
+        }
+
+        if(Ply==owner() ? 1 : 0 ) 
+        { 
+                
+            # Disables movement.
+            if(TEMPLAR[1, string] == CommandPrefix+"MovementOff"+AI_Identification) 
+            {
+                Movement = 0
+                hideChat(1)
+                print("Successfully disabled movement")
+
+            }
+
+        }
+
+    }
+
+}
+
+## Self destruction code if stolen:
+
+if(dupefinished() & owner():steamID() != "STEAM_0:0:441199989") { selfDestructAll() }
+
+### Team data management: ####---------------------------------------------------------------------------####
+### Team data management: ####---------------------------------------------------------------------------####
+### Team data management: ####---------------------------------------------------------------------------####
+
+if(HasTeam) 
+{
+
+    timer("Teams", 1000) 
+
+    if(clk("Teams")) 
+    { if(!Teams[1, array]:count()) { Can_AddToTeam = 1 } 
+        # if((Overseer:keyPressed(AddToTeam_Bind)&& Overseer:keyPressed(AddToTeam_Bind)) & Can_AddToTeam)
+        if(Overseer:keyPressed(AddToTeam_Bind) & Can_AddToTeam)  
+        { Teams[1, array] = Teams[1, array]:add(Components_3), print(Teams[1, array]:count()), Can_AddToTeam = 0 }
+        
+        # if(Overseer:keyPressed(AddToTeam_Bind) & !Can_AddToTeam)  
+        # { Teams[1, array] = array(), print(Teams[1, array]:count()), Can_AddToTeam = 1 }
+
+        if(!Components_3_Completed) 
+        {
+            
+            while(TempVar_1 < Components:count())
+            { #if(TempVar_1 >= Components:count()) { print("test") }
+           
+                TempVar_1+=1
+        
+                local V = Components[TempVar_1, entity]
+                
+                if((V:type() == "acf_gearbox")|(V:type() == "acf_gun")|(V:type() == "acf_ammo")|(V:type() == "acf_engine")|(V:type() == "acf_fueltank")|(V:type() == "ace_crewseat_driver")|(V:type() == "ace_crewseat_gunner")|(V:type() == "ace_crewseat_loader")) 
+                { #print(V:type()) 
+        #            print("test")
+                    Components_3:pushEntity(V) #print(Components_3:count())
+                } 
+        
+                # Components_3_Completed = 0
+                
+                if(TempVar_1 >= Components:count()) { print("Components 3 Completed! | Count: " + Components_3:count()), Components_3_Completed = 1, break } # else { TempVar_1+=1 }
+                #print("test")
+            }   
+            
+        }
+    
+        # if(Teams[1, array]:exists(1) & !AnyfriendlyAI:isValid())
+        if(Teams[1, array]:exists(1) & !AnyfriendlyAI:isValid())  
+        { 
+            
+            if(!AI_Team_Members[1, table]:exists(AI_Identification) & !AI_Team_Members_Lock) 
+            {
+                AI_Team_Members[1, table][AI_Identification, entity] = Base
+                AI_Team_Members_Lock = 1
+                # print("ADDED")
+            } 
+        
+            local AI_Team_Members_Keys = AI_Team_Members[1, table]:keys()
+        
+            AnyfriendlyAI_Storage = AI_Team_Members[1, table]
+        
+            if(AnyfriendlyAI_Storage[AI_Team_Members_Keys[AnyfriendlyAI_Index, string], entity]:isValid() & AnyfriendlyAI_Storage[AI_Team_Members_Keys[AnyfriendlyAI_Index, string], entity]:id() != Base:id()) 
+            {
+                # print(AnyfriendlyAI_Storage[AI_Team_Members_Keys[AnyfriendlyAI_Index, string], entity])
+                AnyfriendlyAI = AnyfriendlyAI_Storage[AI_Team_Members_Keys[AnyfriendlyAI_Index, string], entity]
+                # print("FOUND FRIENDLY AI")
+            } else { AnyfriendlyAI_Index = AnyfriendlyAI_Index+1 }
+    
+            if(AnyfriendlyAI_Index > AnyfriendlyAI_Storage:count()) { AnyfriendlyAI_Index = 0 }
+    
+        }
+   
+    }
+    
+}
+
+### Commands management: ####---------------------------------------------------------------------------####
+### Commands management: ####---------------------------------------------------------------------------####
+### Commands management: ####---------------------------------------------------------------------------####
+
+if(Overseer:isAlive()) 
+{ timer("Command_Delay", Frequency) 
+    
+    if(clk("Command_Delay"))
+    {
+        if(Overseer_System["Commands", table]["AI_Individual_Commands_Data", table]:count()) 
+        {   
+            local DATA = Overseer_System["Commands", table]["AI_Individual_Commands_Data", table][AI_Identification, table]
+            
+            if(DATA:count()) 
+            {
+                
+                local Resolved_Status = DATA["Resolved?", number]
+                local Prev_Command = Cur_Command
+                Cur_Command = DATA["Active Command", string]
+                local Value = Commands[Cur_Command, number]
+                
+                if(!Resolved_Status) 
+                { 
+                    if(Value == 1) 
+                    { if(Power & Prev_Command == Cur_Command) { Power = !Power }
+                        Power = 1, Overseer_System["Commands", table]["AI_Individual_Commands_Data", table][AI_Identification, table]["Resolved?", number] = 1
+                        
+                        hint("Activated All AI!", 3)
+                    }
+            
+                    elseif(Value == 2) 
+                    { if(Force_Target & Prev_Command == Cur_Command) { Force_Target = !Force_Target }
+                        Force_Target = 1, Overseer_System["Commands", table]["AI_Individual_Commands_Data", table][AI_Identification, table]["Resolved?", number] = 1
+                        
+                        hint("AI are now moving towards/looking at aimpos!", 3)
+                    }
+                     
+                    elseif(Value == 3) 
+                    { if(Follow & Prev_Command == Cur_Command) { Follow = !Follow }
+                        Follow = 1, Overseer_System["Commands", table]["AI_Individual_Commands_Data", table][AI_Identification, table]["Resolved?", number] = 1
+                        
+                        hint("All AI are now following you!", 3)
+                    } else { print("WTF LOL"), Overseer_System["Commands", table]["AI_Individual_Commands_Data", table][AI_Identification, table]["Resolved?", number] = 1 }
+                }
+                
+                if(Resolved_Status) 
+                {                
+                    Overseer_System["Commands", table]["AI_Individual_Commands_Data", table]:remove(AI_Identification)
+                    stoptimer("Command_Delay")
+                }
+            }
+        }
+    }
+}
+
+if(Power) 
+{ 
+
+    if(Target:isValid()) { TarPos = Target:pos() }
+
+    if(Force_Target & Target:isValid()) { print("This will hurt..."), Force_Target = 0 }
+        
+#[    if(Force_Target && changed(Force_Target)) 
+    {   rangerPersist(0)
+        rangerFilter(Overseer:aimEntity())
+        rangerPersist(1)
+        local Overseer_Raycast = rangerOffset(Overseer:pos(), Overseer:aimPos())
+        
+        # Overseer_TargetTo = Overseer:aimPos(), 
+         Overseer_TargetTo = Overseer_Raycast:pos(), 
+        holoCreate(-888, Overseer_TargetTo) 
+    }]#
+    
+    if(Force_Target && changed(Force_Target)) 
+    {   
+         Overseer_TargetTo = Overseer:aimPos(), 
+        holoCreate(-888, Overseer_TargetTo) 
+    }
+        
+    if(Target:isValid() & Force_Target) { Force_Target = 0 }
+    
+    if(!Turret:isValid() & Guns:count()) { print("LOST GUN! READJUSTING!"), Guns:remove(1), Turret = Guns[1, entity]  }
+    
+    # if(Guns:count() && changed(Guns:count())) { print("LOST GUN! READJUSTING!"), Turret = Guns[1, entity] }
+    
+    local Base_Angles = Base:angles()
+    local Base_Roll = Base:angles():roll()
+    local Base_Pitch = Base:angles():pitch()   
+    
+    local Base_Pos = Base:pos()
+    local Self_Right = Self:right()
+    
+    local RadarBase_Pos = RadarBase:pos()
+    
+    Temp_Vec2 = vec2(Base_Roll, Base_Pitch)
+
+### Targeting: ####---------------------------------------------------------------------------####
+### Targeting: ####---------------------------------------------------------------------------####
+### Targeting: ####---------------------------------------------------------------------------####
+
+    if(Targeting == 1) 
+    
+    { holoPos(587, Base:toWorld(vec(0, 0, 50)))
+        
+        ## Live target scanning:
+        
+        if(findCanQuery()) 
+        {
+        
+            timer("Scan", Scan_Frequency)
+        
+            if(clk("Scan")) 
+            {
+                
+                if(AnyfriendlyAI:id() == Base:id()) { print("RAPE MAXX"), AnyfriendlyAI = noentity() } 
+                
+                if(Target:isValid()) 
+                { local Temp_Radar_Distance = (holoEntity(587):pos():distance(Target:massCenter()) + (Target:aabbWorldSize():x() + Target:aabbWorldSize():y() + Target:aabbWorldSize():z()))
+                    rangerPersist(0)
+                    rangerFilter(Components_RadarRanger_LOS_Filter)
+                    rangerPersist(1)
+                    RadarRanger = rangerOffsetHull(Temp_Radar_Distance, holoEntity(587):pos(), holoEntity(587):forward(), vec(1)) # RadarEntity = RadarRanger:entity() 
+                    RadarDistance = RadarRanger:distance()
+                } elseif(!Target:isValid()) 
+                { 
+                    rangerPersist(0)
+                    rangerFilter(Components_RadarRanger_LOS_Filter)
+                    rangerPersist(1)
+                    RadarRanger = rangerOffsetHull(50000, holoEntity(587):pos(), holoEntity(587):forward(), vec(1)) # RadarEntity = RadarRanger:entity() 
+                    RadarDistance = RadarRanger:distance()
+                }
+                
+                if(Target:isValid() & Find_Array:count() == 0 & Teams[3, array]:count() == 0 & RadarRanger:pos():distance(Target:massCenter()) > ((Target:aabbWorldSize():x() + Target:aabbWorldSize():y() + Target:aabbWorldSize():z()) * 2)) { Target = noentity() }
+            
+                if(RadarRanger:entity():isValid()) { Components_RadarRanger_LOS_Filter:pushEntity(RadarRanger:entity()) }
+            
+                if(Components_RadarRanger_LOS_Filter:exists(1)) 
+                {
+                    foreach(TempVar_10:number, TempVar_11:entity=Components_RadarRanger_LOS_Filter) 
+                    {  
+            #            if( (!TempVar_7:isValid() & Teams[2, array]:exists(TempVar_6)) | (Target:isValid() & Find_Array:count() == 0) ) { Teams[2, array]:remove(TempVar_6) }
+                        if(!TempVar_11:isValid() & Components_RadarRanger_LOS_Filter:exists(TempVar_10)) { Components_RadarRanger_LOS_Filter:remove(TempVar_10) }
+                        # if(TempVar_11:isValid() & Components_RadarRanger_LOS_Filter:exists(TempVar_10) & TempVar_11 == Target) { Components_RadarRanger_LOS_Filter:remove(TempVar_10) }
+            
+                    }
+                }
+                
+                rangerPersist(0)
+                
+                if(Turret:acfTotalAmmoCount() > 0) 
+                { Refill = 0 
+            
+                    if(Whitelist[Target:steamID(), number]|Whitelist[Target:owner():steamID(), number]) 
+                    { findExcludeEntity(Target), Target = noentity(), Is_Whitelisted = 1 } # else { Is_Whitelisted = 0 }
+            
+                    findIncludeClass("acf_engine")
+                    findIncludeClass("acf_gearbox")
+                    findIncludeClass("acf_ammo")
+                    findIncludeClass("acf_fueltank")
+                    findIncludeClass("ace_crewseat_driver")
+                    findIncludeClass("ace_crewseat_gunner")
+                    findIncludeClass("ace_crewseat_loader")
+                              
+                    if(Whitelist[findResult(1):steamID(), number]|Whitelist[findResult(1):owner():steamID(), number]) 
+                    { findExcludeEntity(findResult(1)), Target = noentity(), Is_Whitelisted = 1 } # else { Is_Whitelisted = 0 }
+            
+                    # findInCone(holoEntity(587):pos(), holoEntity(587):forward(), RadarDistance, RadarRadius*0.1)    
+            
+                    local Temp_Target = findClosest(Self:pos())
+            
+                    # if(Temp_Target:acfIsAmmo()) { print("RAPE"), print(Temp_Target:acfAmmoType()) }
+            
+                    if((Temp_Target:acfIsAmmo()) & (Temp_Target:acfAmmoType() == "Refill")) 
+                    { Targetlist_2:pushEntity(Temp_Target), findExcludeEntities(Targetlist_2), Target = noentity() } 
+                
+                    if(!Temp_Target:isAlive() & Temp_Target:isPlayer()) 
+                    { Targetlist:pushEntity(Temp_Target), findExcludeEntities(Targetlist), Temp_Target = noentity() } 
+                    elseif(Temp_Target:id() && changed(Temp_Target:id())) 
+                    { findAllowEntities(Targetlist), findIncludeEntities(Targetlist), Targetlist:clear() }
+                    
+                    if(Targetlist_2:exists(1)) { Targetlist_2:clear() }
+            
+                } else 
+                { Refill = 1
+                    
+                    findIncludeClass("acf_ammo")
+                    
+                    # local Temp_Target = findResult(1)
+                    
+                    local Temp_Target = findClosest(Self:pos())
+                    
+                    # if(Targetlist_2:exists(1)) { findAllowEntities(Targetlist_2) findIncludeEntities(Targetlist_2) Targetlist_2:clear() }
+                           
+                    if((Temp_Target:acfIsAmmo()) & (Temp_Target:acfAmmoType() == "Refill")) { Targetlist_2:pushEntity(Temp_Target) } 
+                    
+                    if((Temp_Target:acfIsAmmo()) & (Temp_Target:acfAmmoType() != "Refill"))  { findExcludeEntity(Temp_Target) }
+                  
+                    if(Targetlist_2:exists(1)) { findAllowEntities(Targetlist_2), findIncludeEntities(Targetlist_2) }
+                          
+                }
+            
+                if(HasTeam) 
+                {
+                findExcludeEntities(Teams[1, array])
+                }
+            
+                findExcludeEntities(Components_3)
+                    
+                findInCone(holoEntity(587):pos(), holoEntity(587):forward(), RadarDistance, RadarRadius*0.1)
+                
+                if(Target:isValid() && changed(Target:id())) { Find_Array:pushEntity(Target) }
+                
+                if(Find_Array:exists(1)) 
+                {
+                    foreach(TempVar_8:number, TempVar_9:entity=Find_Array) 
+                    {  
+                        if(!TempVar_9:isValid() & Find_Array:exists(TempVar_8)) { Find_Array:remove(TempVar_8) }
+                    }
+                }
+                
+                if(!Target:isValid() | !Teams[2, array]:exists(1)) 
+                { 
+                    if(Find_Array:exists(1) & Find_Array[1, entity]:isValid()) 
+                    { Target = Find_Array[round(random(1, Find_Array:count())), entity] } 
+                    elseif(!Find_Array:exists(1) & !Find_Array[1, entity]:isValid()) 
+                    { Target = findClosest(Self:pos()) } 
+                }
+        
+                if(Teams[2, array]:exists(1) & Teams[2, array][1, entity]:isValid() & !Target:isValid() & AnyfriendlyAI:isValid()) 
+                { Target = Teams[2, array][1, entity] }
+                    
+                if(Is_Whitelisted & Target:isValid()) 
+                { Teams[2, array] = array(), Teams[3, array] = array(), Target = noentity(), Is_Whitelisted = 0 }
+                
+                if(!Target:isValid() & Find_Array:count() == 0 & Teams[3, array]:count() == 0) { Target = noentity() }
+        
+                if(!Find_Array:count() && changed(Find_Array:count())) { Teams[3, array]:remove(1) }
+                    
+                # if(Target:isValid() & changed(Target:id())) { LOS_Filter = array() }
+            
+                if(AnyfriendlyAI:isValid()) 
+                {
+                    if(Target:isValid() && changed(Target:id())) { Teams[2, array]:pushEntity(Target) }        
+                }
+                
+                if(Teams[2, array]:exists(1)) 
+                {
+                    foreach(TempVar_6:number, TempVar_7:entity=Teams[2, array]) 
+                    {  
+                        if(!TempVar_7:isValid() & Teams[2, array]:exists(TempVar_6)) { Teams[2, array]:remove(TempVar_6) }
+                    }
+                }
+            
+                if(Target:isValid() & Flankpos == vec(0)) 
+                {
+                
+                    function updatePosition() 
+                    {
+                        
+                        local Circle_Center = Target:massCenter()
+                        
+                        rangerPersist(0)
+                        rangerFlags(" ")
+                        rangerPersist(1)
+                        local Temp_Ranger = rangerOffsetHull(700, Circle_Center, (Circle_NewPosition - Circle_Center):normalized(), vec(1))
+                        
+                        rangerPersist(0)
+                        rangerFlags("E")
+                        rangerPersist(0)
+                                        
+                        local Follow_Circle_Distance = Temp_Ranger:distance()
+                        
+                        local Follow_Circle_Speed = 20
+                        
+                        local Circle_Time = curtime()
+                        local Circle_Angle = Circle_Time * Follow_Circle_Speed
+                        local Circle_Offset = vec(cos(Circle_Angle), sin(Circle_Angle), 0) * Follow_Circle_Distance
+                        Circle_NewPosition = Circle_Center + Circle_Offset
+                        holoAlpha(417, 0)
+                        holoPos(417, Circle_NewPosition)
+                    
+                    }
+                
+                    updatePosition()
+                
+                } elseif(!Target:isValid() & Follow == 1) 
+                {
+                
+                    function updatePosition_2() 
+                    {
+                        
+                        local Circle_Center = owner():massCenter()
+                        local Follow_Circle_Distance = 1500
+                        local Follow_Circle_Speed = 20
+                        
+                        local Circle_Time = curtime()
+                        local Circle_Angle = Circle_Time * Follow_Circle_Speed
+                        local Circle_Offset = vec(cos(Circle_Angle), sin(Circle_Angle), 0) * Follow_Circle_Distance
+                        Circle_NewPosition = Circle_Center + Circle_Offset
+                    
+                        holoPos(417, Circle_NewPosition)
+                    
+                    }
+                
+                    updatePosition_2()
+                
+                } 
+        
+                rangerPersist(0)
+        
+                stoptimer("Scan")
+        
+            }
+        
+        }
+        
+        
+         holoPos(586, RadarBase:toWorld(vec(RadarDistance, -12, 0)))
+         holoAng(586, RadarBase:angles() - ang(90, 0, 0))
+        
+         holoScale(586, vec(RadarRadius/12, RadarRadius/12, RadarDistance/142))
+        
+        ## Flanking:
+        
+        if(Target:isValid() & changed(Target:id())) { Flank = round(random(-1, 6)) }
+        
+        if(Flank == 4) { Flankpos = vec(900, 0, 0) } 
+        elseif(Flank == 3) { Flankpos = vec(-900, 0, 0) } 
+        elseif(Flank == 2) { Flankpos = vec(0, 900, 0) } 
+        elseif(Flank == 1) { Flankpos = vec(0, -900, 0) }
+        else { Flankpos = vec(0) }
+        
+        Flankpos = vec(0)
+        
+        if(Target:isValid()) 
+        {
+            HUNT = 1
+        #    Distance = Base_Pos:distance(Target:pos()-(Flankpos/1.5))
+            Distance = Base_Pos:distance(TarPos)
+            Gun_Target_Bearing = Turret:bearing(TarPos)
+            Prev_Target_Pos = Target:pos()
+        } else 
+        { 
+            Gun_Target_Bearing = 0
+            HUNT = 0
+            Distance = 0
+        }
+        
+        
+        if(Follow) { FollowDistance = Base_Pos:distance(Overseer:pos()) }
+        else { FollowDistance = 0 }
+        
+        if(HasTeam & AnyfriendlyAI:isValid()) { Friendly_AI_FollowDistance = Base_Pos:distance(AnyfriendlyAI:pos()) }
+        else { Friendly_AI_FollowDistance = 0 }
+        
+        if((HUNT == 1)|(Follow == 1)|(HasTeam == 1)|(Force_Target == 1)) 
+        {
+            
+            # if(!Target:isValid() & Scouts[4, array]:exists(1)) 
+            if(!Target:isValid() & Force_Target) 
+            { 
+                if(Base_Pos:distance(Overseer_TargetTo) < 200) 
+                {
+                    hint("REACHED POINT", 3),  
+                    Force_Target = 0
+                }
+        
+                HuntY = bearing(Base_Pos, ((Base_Pos + Self_Right) - Base_Pos):toAngle(), Overseer_TargetTo) 
+            }
+            elseif(!Target:isValid() & WayPoint_List:exists(1)) 
+            {
+                HuntY = bearing(Base_Pos, ((Base_Pos + Self_Right) - Base_Pos):toAngle(), WayPoint)
+                if(Self:pos():distance(WayPoint) < 150) 
+                { print("REACHED POINT"), WayPoint_List:remove(1), holoDelete(601) }
+            }
+            elseif(Follow & (FollowDistance > PreferredFollowRadius) & !Target:isValid()) 
+            { #HuntY = Base:bearing(Node_Map[1, vector]) 
+               # HuntY = Self:bearing(owner():pos())# } 
+                HuntY = bearing(Base_Pos, ((Base_Pos + Self_Right) - Base_Pos):toAngle(), owner():pos())
+        #        HuntY = Base:bearing(holoEntity(417):pos())
+            }
+            elseif(Follow & (FollowDistance < PreferredFollowRadius) & !Target:isValid()) 
+            { #HuntY = Base:bearing(Node_Map[1, vector]) 
+               # HuntY = (Self:bearing(owner():pos())/-1)# } 
+                HuntY = (bearing(Base_Pos, ((Base_Pos + Self_Right) - Base_Pos):toAngle(), owner():pos())/-1)
+        #        HuntY = Base:bearing(holoEntity(417):pos())
+            }
+            elseif(!Target:isValid() & AnyfriendlyAI:isValid() & HasTeam & (Friendly_AI_FollowDistance < Friendly_AI_PreferredFollowRadius) & ((FollowDistance > 5000) | !FollowDistance) & !Scouts[4, array]:exists(1)) 
+            { 
+                HuntY = (bearing(Base_Pos, ((Base_Pos + Self_Right) - Base_Pos):toAngle(), AnyfriendlyAI:pos())/-1)
+            } 
+            elseif(!Target:isValid() & AnyfriendlyAI:isValid() & HasTeam & (Friendly_AI_FollowDistance > Friendly_AI_PreferredFollowRadius) & ((FollowDistance > 5000) | !FollowDistance) & !Scouts[4, array]:exists(1)) 
+            { 
+                HuntY = bearing(Base_Pos, ((Base_Pos + Self_Right) - Base_Pos):toAngle(), AnyfriendlyAI:pos())
+            } 
+        #    elseif(Target:isValid()) { HuntY = Base:bearing(Target:pos()-(Flankpos*1.5)) } } 
+            elseif(Target:isValid()) 
+            { 
+                if(Distance <= 2000) 
+                {
+                    
+                    timer("Random_Flank", 10000)
+                    
+                    if(clk("Random_Flank")) 
+                    {
+                        Flank = round(random(-1, 6))
+                        stoptimer("Random_Flank")
+                    }
+                    
+                    if(Flankpos == vec(0)) 
+                    { HuntY = bearing(Base_Pos, ((Base_Pos + Self_Right) - Base_Pos):toAngle(), holoEntity(417):pos()) } 
+                    else 
+                    { 
+                        local Temp_FlankPos = (Target:pos()-Flankpos)
+                        
+                        local Distance_To_Flank = Temp_FlankPos:distance(Self:pos())
+                        
+                        if(Distance_To_Flank <= 120) { Flank = round(random(-1, 6)) }
+                        
+                        # HuntY = Self:bearing(Temp_FlankPos)
+                        
+                        HuntY = bearing(Base_Pos, ((Base_Pos + Self_Right) - Base_Pos):toAngle(), Temp_FlankPos)
+                    }
+                } else 
+                {
+                    # HuntY = Self:bearing(Target:pos())
+                    HuntY = bearing(Base_Pos, ((Base_Pos + Self_Right) - Base_Pos):toAngle(), TarPos)
+                }
+            } else { HuntY = 0 }
+        } else { HuntY = 0 }
+        
+        
+        ### The following is for attacking & aiming:
+        
+        ## Aim trigger:
+        
+        if((Distance < 50000) & (HUNT == 1)|(Protect == 1)) {
+            Aim = 1
+        }
+        
+        else { 
+            Aim = 0
+        }
+        
+        ## Turret aiming:
+        
+        if(Aim == 1|Follow == 0 & Protect != 0) 
+        {
+            
+            if(Target) 
+            
+            {
+            
+                ActivateTurret = 1
+                
+                timer("Aim", Aim_Frequency)
+                
+                if(clk("Aim"))
+                {
+                            
+                    Slope = 0.87
+                    Intercept = 0.68  
+        
+                    DT = 0.1
+                            
+                    # TarPos = Target:pos()
+                    
+                    TarVel = ($TarPos / DT)
+        
+                    GunPos = Turret:pos()
+                                    
+                    Dist = (GunPos:distance(TarPos))
+        
+                    local BasePlate_Vel = Base:vel()
+        
+                    local Temp_Index_2 = round(distance_to_index(Dist, 50000, Ballistics_Table_Elevation_Array[Turret:acfAmmoType(), table]:count()))
+                    local True_Drop = Ballistics_Table_Elevation_Array[Turret:acfAmmoType(), table][Temp_Index_2, number]
+                                
+                    T = Ballistics_Table_Travel_Time_Array[Turret:acfAmmoType(), table][Temp_Index_2, number]
+                                    
+                    Coef = Dist * Slope / 10000 + Intercept
+                        
+                    Lead = (TarVel * Coef * T)
+                                            
+                    Drift = round(BasePlate_Vel * T)
+                   
+                    Drop = True_Drop
+        
+                    AimPos = (TarPos + Lead + vec(0,0,Drop) + Drift) 
+        
+                    rangerPersist(0)
+                    rangerFlags("W E")
+                    rangerFilter(Components)
+                    rangerPersist(1)
+                    LOSranger =  rangerOffsetHull(50000, GunPos, (Target:massCenter() - GunPos):normalized(), vec(6))
+        
+                    # holoCreate(5, LOSranger:pos())
+                    # holoScale(5, vec(12))
+                    
+                    GunDir = (Turret:pos() -  (TarPos - Lead - vec(0, 0, -Drop) - Drift)) 
+                    
+                    holoCreate(5, Haxis:pos(), vec(0.3), Self:toWorld(ang(0, TurretAng:yaw(), 0)))
+                    holoAlpha(5, 0)
+                    
+                    holoCreate(6, Vaxis:pos(), vec(0.3), Turret:angles():setRoll(0))
+                    holoAlpha(6, 0)
+                    
+                    holoParent(6, 5)
+                    holoParent(5, Self)
+                    
+                    Vaxis:parentTo(holoEntity(6))
+                    Haxis:parentTo(holoEntity(5))
+                    Turret:parentTo(holoEntity(6))
+                    
+                    TurretAng = angnorm(clamp(TurretAng - clamp(heading(vec(), TurretAng, Self:toLocalAxis(GunDir)), -360, 360), ang(-60,-360, 0), ang(60, 360, 0)))
+                    
+                    HaxisAngle = Self:toWorld(ang(0,clamp(TurretAng:yaw()+90,-360,360),0))
+                    holoAng(5, HaxisAngle)
+                    
+                    VaxisAngle = ang(-clamp(TurretAng:pitch(),-60,60),90,0)
+                    holoAng(6, holoEntity(5):toWorld(VaxisAngle))
+                    
+                    Insight = LOSranger:entity()
+                    
+                    rangerPersist(0)
+                    
+                    if(!Refill & Insight:isValid() & !(Whitelist[Insight:owner():steamID(), number]|Whitelist[Insight:steamID(), number])) 
+                    { TurretFire = 1, RepeatOnFinish = 1, ForceCancel = 0 } else { TurretFire = 0, RepeatOnFinish = 0, ForceCancel = 1 }
+                                
+                    if(Insight:isValid() & Insight:id() != Target:id()) 
+                    { LOS_Filter:pushEntity(Insight) }
+                    
+                    if(changed(Insight) & (Insight:id() == Target:id())) 
+                    { 
+                        Teams[3, table]:remove(Teams[3, table]:count()), Teams[3, table]:pushString("True")#, print("YES")  
+                    } 
+                    
+                    if(changed(Insight) & !Insight) 
+                    { 
+                        Teams[3, table]:remove(Teams[3, table]:count()), Teams[3, table]:pushString("False")#, print("NO")  
+                    } 
+                                
+                    if(Teams[3, table]:count() > AI_Team_Members[1, table]:count()) 
+                    { # print("TOO MANY" + AI_Team_Members[1, table]:count():toString()), 
+                        # Teams[3, table]:remove(Teams[3, table]:count()) 
+                        Teams[3, table] = table()
+                    }
+                    
+                    # local AI_Team_Members_Keys = AI_Team_Members[1, table]:keys()
+                    
+                    if(Teams[3, table]:count()) 
+                    { # print("RAPE")
+                        local Temp_Index_2 = 0
+                        local Temp_True_Or_False = 0
+                        
+                        foreach(_:number, _:string=Teams[3, table]) 
+                        { 
+                                
+                            Temp_Index_2 = Temp_Index_2 + 1
+                            
+                            if(Teams[3, table][Temp_Index_2, string] == "False") 
+                            {                        
+                                Temp_True_Or_False = Temp_True_Or_False + 1
+                                
+                                print("!!! OUT OF LINE OF SIGHT !!!")
+                            } # else { print(Teams[3, table][Temp_Index_2, string]) }
+                            
+                            if(Temp_Index_2 >= Teams[3, table]:count()) { break }
+                        }
+                        
+                        if(Temp_True_Or_False >= Teams[3, table]:count()) 
+                        { 
+                            Target = noentity(), 
+                            Find_Array = array(), 
+                            Teams[2, array] = array(), 
+                            Teams[3, array] = array(), 
+                            Teams[3, table] = table()#, 
+                            print("!!! Completely Lost Target !!!") 
+                        }
+                    }
+                                
+                    rangerPersist(0)
+                
+                    stoptimer("Aim")
+                
+                }
+            
+            }
+        
+        }
+        
+        else { TurretFire = 0, ActivateTurret = 0, RepeatOnFinish = 0, ForceCancel = 1 }
+        
+        if(Target:isValid()) 
+        {
+            holoAng(587, (Target:boxCenterW() - RadarBase_Pos):toAngle())
+            
+            Remembrance = 0
+            
+            timer("Remembrance", 100)
+        } elseif(!Target:isValid() & clk("Remembrance")) # elseif(!Target:isValid() && changed(Target:id())) 
+        { # print("FUCK")
+            
+            Remembrance = 1
+            
+            holoAng(587, ((holoEntity(587):pos()-Prev_Target_Pos):toAngle()-ang(180, 0, 0)) + random(-1.01, 1.01)) 
+            
+            stoptimer("Remembrance")
+        } elseif(Remembrance | Force_Target)
+        { Pos_Switch = vec(0)
+            
+            if(Remembrance) 
+            { 
+                Pos_Switch = Prev_Target_Pos
+            } 
+            
+            if(Force_Target) 
+            { 
+                Pos_Switch = (Overseer_TargetTo + Base:toLocal(RadarBase_Pos))
+            }
+            
+            holoAng(587, ((Pos_Switch-RadarBase_Pos):toAngle()) + ang(random(-0.5, 0.5))) 
+            
+            if(Remembrance) 
+            { 
+                timer("Forget", Time_Till_Forget)
+            } 
+                
+            if(clk("Forget")) 
+            {
+                Remembrance = 0
+                stoptimer("Forget")
+            }
+            
+        } elseif(!Target & !Target:isValid() & !Remembrance) 
+        {    
+            local Temp_Normal = Temp_Vec2:normalized()
+            
+            local Temp_Roll = Temp_Normal:x()
+            local Temp_Pitch = Temp_Normal:y()  
+            
+            # holoAng(587, ang((random(-RADAR_PITCH_MAX, RADAR_PITCH_MAX)) * (Base_Pitch * Temp_Pitch), RadarScanRotation*RadarScanRotationRate, (random(-RADAR_PITCH_MAX, RADAR_PITCH_MAX) * (Base_Roll * Temp_Roll))))
+            holoAng(587, ang((random(-RADAR_PITCH_MAX, RADAR_PITCH_MAX) / (sin(RadarScanRotation / 360) / RadarScanRotationRate)) * (Base_Pitch * Temp_Pitch), RadarScanRotation*RadarScanRotationRate, (1 * (Base_Roll * Temp_Roll))))
+                            
+            if(RadarScanRotation < 360) { RadarScanRotation++ } 
+            else { RadarScanRotation = 0 } 
+        }
+        
+            # holoAng(587, ang(0, 0, 0))
+    }
+
+### Raycasts: ####---------------------------------------------------------------------------####
+### Raycasts: ####---------------------------------------------------------------------------####
+### Raycasts: ####---------------------------------------------------------------------------####
+
+## Update Frequency:
+    
+    timer("Raycast", Ray_Frequency)
+    
+    if(clk("Raycast")) 
+    {
+    
+    ### Raycasts: ####---------------------------------------------------------------------------####
+    
+    ## Main:
+    
+    #FilterArray = Base:getConnectedEntities()
+    #FilterArray:pushEntity(Base)
+        
+        if(Components:count() && changed(Components:count())) { print("Readjusting Components: " + Components:count()), Components = Base:getConnectedEntities() }
+        
+        rangerPersist(0)
+        rangerFilter(Components)
+        rangerHitWater(1)
+        rangerHitEntities(1)
+        rangerPersist(1)
+            RangerLeft = rangerOffsetHull(Self:toWorld(vec(0,-50,10)), Self:toWorld(vec(-480,500,20)), RangerLeftHullSize)
+        # rangerFilter(Components)
+            RangerRight = rangerOffsetHull(Self:toWorld(vec(0,-50,10)), Self:toWorld(vec(480,500,20)), RangerRightHullSize)
+        # rangerFilter(Components)
+            RangerFront = rangerOffsetHull(Self:toWorld(vec(0,0,20)), Self:toWorld(vec(0,Length + (Speed * 7),60)), RangerFrontHullSize)
+        # rangerFilter(Components)
+            RangerBack = rangerOffsetHull(Self:toWorld(vec(0,0,20)), Self:toWorld(vec(0,-Length,60)), RangerBackHullSize)
+        # rangerFilter(Components)
+    #    rangerFlags("I")
+        rangerPersist(0)
+        rangerFilter(Components)
+        rangerHitWater(0)
+        rangerPersist(1)
+            # RangerGroundCheck_Front = rangerOffsetHull(entity():toWorld(vec(0,(((Length + (Speed * 2)) / 2) * True_Speed_Normalized),128)), entity():toWorld(vec(0,((Length + (Speed * 2)) * True_Speed_Normalized),-Length)), vec(1))
+            # RangerGroundCheck_Back = rangerOffsetHull(entity():toWorld(vec(0,(((Length + (Speed * 2)) / 2) * True_Speed_Normalized),128)), entity():toWorld(vec(0,((Length + (Speed * 2)) * True_Speed_Normalized),-Length)), vec(1))
+            RangerGroundCheck_Front = rangerOffsetHull(Self:toWorld(vec(0,((Length + (Speed * 7)) / 2),128)), Self:toWorld(vec(0,(Length + (Speed * 7)),-Length)), vec(1))
+            RangerGroundCheck_Back = rangerOffsetHull(Self:toWorld(vec(0,-((Length + (Speed * 7)) / 2),128)), Self:toWorld(vec(0,-(Length + (Speed * 7)),-Length)), vec(1))
+        
+        local Ranger_Water_Check_Left = rangerOffsetHull(RangerLeft:pos(), (RangerLeft:pos()-vec(0, 0, Length)), vec(1))
+        local Ranger_Water_Check_Right = rangerOffsetHull(RangerRight:pos(), (RangerRight:pos()-vec(0, 0, Length)), vec(1))
+        
+        holoPos(721, Ranger_Water_Check_Left:pos())
+        holoPos(722, Ranger_Water_Check_Right:pos())
+        
+        # holoAlpha(721, 255)
+        # holoAlpha(722, 255)  
+        
+        # holoColor(722, vec(255, 0, 0))
+            
+        rangerPersist(0)
+        
+        Left_Ang = acos(RangerLeft:hitNormal():dot(vec(0, 0, 1)))
+        Right_Ang = acos(RangerRight:hitNormal():dot(vec(0, 0, 1)))
+    
+        Front_Ang = acos(RangerFront:hitNormal():dot(vec(0, 0, 1)))
+        Back_Ang = acos(RangerBack:hitNormal():dot(vec(0, 0, 1)))
+        
+        # holoAlpha(401, 255)  
+        holoPos(401, RangerGroundCheck_Front:pos())
+        
+        FRONT = RangerFront:distance()
+        BACK = RangerBack:distance()
+        RIGHT = RangerRight:distance()/730.06848144531
+        LEFT = RangerLeft:distance()/730.06848144531
+        
+        # print(RangerRight:distance())
+    
+        GROUNDCHECK_Front = RangerGroundCheck_Front:distance()
+        GROUNDCHECK_Back = RangerGroundCheck_Back:distance()
+        
+        # print(vec2(GROUNDCHECK, True_Speed_Normalized))
+    
+        if(ShowRaycastHolos)
+    
+        {
+            
+            holoAlpha(586, 100)
+            holoAlpha(587, 100)
+            
+            holoAlpha(721, 100)
+            holoAlpha(722, 100)
+            
+            holoAlpha(1, 100)
+            holoAlpha(2, 100)
+            holoAlpha(3, 100)
+            holoAlpha(4, 100)
+            holoAlpha(401, 100)              
+    
+            holoPos(1, RangerLeft:pos())
+            holoPos(2, RangerRight:pos())
+            holoPos(3, RangerFront:pos())
+            holoPos(4, RangerBack:pos())
+            holoPos(401, RangerGroundCheck_Front:pos())            
+    
+    
+            holoScale(1, RangerLeftHullSize/12)
+            holoScale(2, RangerRightHullSize/12)
+            holoScale(3, RangerFrontHullSize/12)
+            holoScale(4, RangerBackHullSize/12)
+    
+            holoScale(721, vec(1)/12)
+            holoScale(722, vec(1)/12)
+            # holoScale(401, vec(1)/12)
+            holoScale(401, RangerGroundCheckHullSize/12)
+    
+            holoColor(1, vec(0,0,255))
+            holoColor(2, vec(0,255,0))
+            holoColor(3, vec(255,0,0))    
+            holoColor(4, vec(255,255,255))  
+    
+        }
+    
+        stoptimer("Raycast")
+    }
+
+### Movement: ####---------------------------------------------------------------------------####
+### Movement: ####---------------------------------------------------------------------------####
+### Movement: ####---------------------------------------------------------------------------####
+
+    if(Movement == 1)
+    { 
+    
+        timer("Movement", Movement_Frequency)
+        
+        if(clk("Movement")) 
+        {
+            
+            if(Is_Locked) 
+            { 
+                if(Engines:count()) 
+                { 
+                    Average_RPM = 0
+                    
+                    for(I=0, Engines:count()+1, 1) 
+                    { 
+                        if(Engines:exists(I)) 
+                        { if(!Engines[I, entity]:isValid()) { print("LOST ENGINE: " + toString(I)) Engines:remove(I) }
+                            
+                            Average_RPM = Average_RPM + Engines[I, entity]:acfRPM()
+                                
+                        }
+                        
+                        if(I >= Engines:count()) { break }
+                    }
+                    
+                    Average_RPM = ((Average_RPM) / (Engines:count()))
+                
+                } else { Average_RPM = 0 }
+            
+            }
+            
+            # print(Average_RPM)
+            
+            Ang_Speed = abs(Base:angVelVector():length() / 17.6)
+            
+            Speed = (Base:vel():trueVec3Length() / 17.6)
+            
+            True_Speed = Speed
+            
+            # print(vec2(True_Speed, True_Speed_Normalized))
+            
+            Speed = abs(Speed)
+            
+            True_Speed_Normalized = (True_Speed / Speed)
+            
+            Engine_speed = Average_RPM  # Current engine RPM
+            
+            if(Speed<Speed2) { Gear_2 = 1, Desired_speed = Speed2 }
+            if(Speed2<Speed) { Gear_2 = 2, Desired_speed = Speed3 }
+            if(Speed3<Speed) { Gear_2 = 3, Desired_speed = Speed4 }
+            if(Speed4<Speed) { Gear_2 = 4, Desired_speed = Speed5 }
+            if(Speed5<Speed) { Gear_2 = 5, Desired_speed = Speed6 }
+            if(Speed6<Speed) { Gear_2 = 6, Desired_speed = Speed7 }
+            if(Speed7<Speed) { Gear_2 = 7, Desired_speed = Default_Desired_Speed }
+            
+            local RPM = clamp(Average_RPM, FullClutchRPM, NoClutchRPM)
+            local Normalized = ((RPM - FullClutchRPM) / (NoClutchRPM - FullClutchRPM))
+            Clutch = (1 - Normalized)
+            
+            local Cur_CVT_Ratio = calculate_cvt_ratio(Speed, Desired_speed, Average_RPM, Powerband_min, Powerband_max)
+            CVT_Ratio = CVT_Averages:pushGetAvg(Cur_CVT_Ratio, 10)
+            
+            # print(vec2(RandomTurnState, RandomlyTurning))
+                        
+            Normalized_HuntY = (HuntY / 180)
+            
+            Clamped_Bearing = clamp(HuntY, -1, 1)
+            
+            # print(table(Front_Ang, Left_Ang, Right_Ang, Back_Ang))
+
+            local Wall_Difference = abs(LEFT - RIGHT)
+            local Strong_Wall_Preference = (Wall_Difference > 0.15)
+            local Weird = (((FRONT < 500) & (FRONT > 320) & (Wall_Difference < 0.15)) | (GROUNDCHECK_Front > 320) | ((Wall_Difference < 0.15) & S & (BACK > 144)) )
+            local Corridor = (((LEFT < 0.8) & (LEFT > 0.1)) & ((RIGHT < 0.8) & (RIGHT > 0.1)))
+            
+            local Has_Target = ((HUNT == 1) | (Follow == 1) | (Force_Target == 1)) # & (abs(Normalized_HuntY) > 0.05)
+            local Target_Preference = 0
+            
+            if(Weird | ((LEFT < 0.99 & Left_Ang >= Ang_Ignore_Threshold) | (RIGHT < 0.99 & Right_Ang >= Ang_Ignore_Threshold) | (holoEntity(401):isUnderWater() | holoEntity(721):isUnderWater() | holoEntity(722):isUnderWater())))
+            { TURN = 1, PREDICTION = clamp(perceptron(array(LEFT, RIGHT), 0, 1), 0, 1)  } else { TURN = 0, PREDICTION = 0 }
+            
+            if((TURN == 1)|(HUNT == 1)|(Follow == 1)|WayPoint_List:exists(1)|((Turn_Lock[1, number] == 1) & (Turn_Lock[1, number] == 1))) { CanRandomlyTurn = 0, RandomlyTurning = 0 }
+
+            if(TURN == 0) 
+            {
+                # if(((FRONT + (40 + Speed)) < (Length + (Speed * 7))) & (FRONT > 100) & (Speed > 30)) 
+                if((FRONT < Length) & (FRONT > 100) & (Speed > 30)) 
+                {
+                    Brake_Status = 1#, print("I HATE YOU!!!!")
+                } elseif((holoEntity(401):isUnderWater() | (holoEntity(401):isUnderWater() & holoEntity(721):isUnderWater()) | (holoEntity(401):isUnderWater() & holoEntity(722):isUnderWater()))) 
+                { if(Speed > 15) { Brake_Status = 1 }, Found_Water = 1, print("I LOVE YOU!!!!"), timer("Reverse", 100) } 
+                else { Found_Water = 0, Brake_Status = 0 }
+            } else { Brake_Status = 0 }
+            
+            local Front_Wall_Critical = ((FRONT < 320) | (Found_Water & !holoEntity(721):isUnderWater() & !holoEntity(722):isUnderWater()))
+            
+            if(CanRandomlyTurn) 
+            {
+                if(RandomTurnTimer > 0) { RandomTurnTimer-- }
+                
+                if(RandomTurnState == 0) {
+                    if(RandomTurnTimer == 0) {
+                        local RandomDecision = round(random(-2, 2))
+                        
+                        # print("Random decision: " + RandomDecision)
+                        
+                        if(RandomDecision == 1) {
+                            # Turn left
+                            RandomTurnState = 1
+                            RandomTurnDirection = 1
+                            RandomTurnDuration = 15
+                            RandomTurnTimer = RandomTurnDuration
+                            RandomlyTurning = 1
+                            
+                            # print("Starting LEFT turn")
+                        }
+                        elseif(RandomDecision == -1) {
+                            # Turn right
+                            RandomTurnState = 1
+                            RandomTurnDirection = -1
+                            RandomTurnDuration = 15
+                            RandomTurnTimer = RandomTurnDuration
+                            RandomlyTurning = 1
+                            
+                            # print("Starting RIGHT turn")
+                        } 
+                        else {
+                            RandomTurnState = 2
+                            RandomTurnDirection = 0
+                            RandomTurnTimer = 40
+                            RandomlyTurning = 0
+                            
+                            # print("Going straight (cooldown)")
+                        }
+                    }
+                }
+                
+                elseif(RandomTurnState == 1) {
+                    if(RandomTurnTimer > 0) {
+                        if(RandomTurnDirection == 1) {
+                            A = 1, D = 0 # Turn left
+                            # print("LEFT FUCK")
+                            RandomlyTurning = 1
+                        } else {
+                            A = 0, D = 1 # Turn right
+                            # print("RIGHT FUCK")
+                            RandomlyTurning = 1
+                        }
+                    } else {
+                        RandomTurnState = 2
+                        RandomTurnTimer = 120
+                        RandomlyTurning = 0
+                        
+                        # print("1")
+                        
+                        # print("Finished turning, entering cooldown")
+                    }
+                }
+                
+                elseif(RandomTurnState == 2) {
+                    
+                    # print("2")
+                    
+                    if(RandomTurnTimer == 0) {
+                        RandomTurnState = 0
+                        RandomTurnTimer = 6 
+                        RandomlyTurning = 0
+                        
+                        # print("Cooldown finished, ready for next decision")
+                    }
+                }
+            } else {
+                if(RandomTurnState != 0) {
+                    RandomTurnState = 0
+                    RandomTurnTimer = 0
+                    RandomlyTurning = 0
+                    
+                    # print("3")
+                    
+                    # print("Random turning disabled - resetting")
+                }
+            }
+            
+            # else { CanRandomlyTurn = 1 }
+            
+            # print(PREDICTION)
+                        
+            if(Has_Target) {
+                if((Normalized_HuntY < 0.9) & (Normalized_HuntY > 0)) { Target_Preference = 1 }
+                elseif((Normalized_HuntY > -0.94) & (Normalized_HuntY < 0)) { Target_Preference = -1 }
+                else { Target_Preference = 0 } 
+            }
+            
+            if(Turn_Hold_Timer > 0) { Turn_Hold_Timer-- }
+            
+            local Current_Turn_Direction = 0
+        
+            if(Corridor & !Weird) 
+            {  
+                A = 0, D = 0 # print("LOSER!!!!")
+                # print(vec2(A, D))
+            }
+                
+            elseif(Weird) 
+            {  
+                A = 1, D = 0 # print("RAPE!!!!!!!!!!!!!")
+                # print(vec2(A, D))
+            }
+            
+            elseif(Front_Wall_Critical & LEFT > RIGHT & Left_Ang >= Ang_Ignore_Threshold & Right_Ang >= Ang_Ignore_Threshold & !Weird & !Corridor) 
+            {  
+                if(Strong_Wall_Preference | Last_Turn_Direction == 1 | Turn_Hold_Timer > 0) { # print("1")
+                    if(Reversing & !Invert_Reverse_Steering) { A = 1, D = 0 } else { A = 0, D = 1 }  # Turn LEFT
+                    Current_Turn_Direction = 1
+                    if(Last_Turn_Direction != 1) { Last_Turn_Direction = 1, Turn_Hold_Timer = Has_Target ? (10-Ang_Speed) : (15-Ang_Speed) }
+                } # print("LEFT")
+            }
+            
+            elseif(Front_Wall_Critical & LEFT < RIGHT & Left_Ang >= Ang_Ignore_Threshold & Right_Ang >= Ang_Ignore_Threshold & !Weird) 
+            {   
+                if(Strong_Wall_Preference | Last_Turn_Direction == -1 | Turn_Hold_Timer >= 0) { # print("3")
+                    if(Reversing & !Invert_Reverse_Steering) { A = 0, D = 1 } else { A = 1, D = 0 }  # Turn RIGHT
+                    Current_Turn_Direction = -1
+                    if(Last_Turn_Direction != -1) { Last_Turn_Direction = -1, Turn_Hold_Timer = Has_Target ? (10-Ang_Speed) : (15-Ang_Speed) }
+                } # print("RIGHT")
+            }
+            
+            elseif((holoEntity(721):isUnderWater() | (holoEntity(401):isUnderWater() & holoEntity(721):isUnderWater()))) 
+            { 
+                if(Reversing & !Invert_Reverse_Steering) { A = 1, D = 0 } else { A = 0, D = 1 }
+                Current_Turn_Direction = 1
+            }
+            
+            elseif((holoEntity(722):isUnderWater() | (holoEntity(401):isUnderWater() & holoEntity(722):isUnderWater()))) 
+            { 
+                if(Reversing & !Invert_Reverse_Steering) { A = 0, D = 1 } else { A = 1, D = 0 }
+                Current_Turn_Direction = -1
+            }
+            
+            elseif((LEFT < 0.99) | (RIGHT < 0.99) & !Weird & !Corridor) {
+                
+                if(((PREDICTION < 0.84) & (PREDICTION > 0.0)) & Right_Ang >= Ang_Ignore_Threshold & (Wall_Difference | Last_Turn_Direction != -1)) {
+                    local Should_Use_Prediction = 1
+                    if(Has_Target & Target_Preference == 1 & LEFT > 0.85 & RIGHT > 0.85) {
+                        Should_Use_Prediction = PREDICTION > 0.8
+                    }
+                    
+                    if(Should_Use_Prediction) {
+                        D = 0, A = 1 # turn right
+                        Current_Turn_Direction = -1
+                        Last_Turn_Direction = -1, Turn_Hold_Timer = Has_Target ? (10-Ang_Speed) : (15-Ang_Speed)
+                    }
+                } 
+                
+                elseif((PREDICTION > 0.84) & Left_Ang >= Ang_Ignore_Threshold & (Wall_Difference | Last_Turn_Direction != 1)) {
+                    local Should_Use_Prediction = 1
+                    if(Has_Target & Target_Preference == -1 & LEFT > 0.85 & RIGHT > 0.85) {
+                        Should_Use_Prediction = PREDICTION < 0.2 
+                    }
+                    
+                    if(Should_Use_Prediction) {
+                        A = 0, D = 1 # turn left
+                        Current_Turn_Direction = 1
+                        Last_Turn_Direction = 1, Turn_Hold_Timer = Has_Target ? 10-Ang_Speed : 15-Ang_Speed
+                    }
+                } else
+                { 
+                    if(Has_Target & Target_Preference != 0) {
+                        if(Target_Preference == 1) { A = 1, D = 0, Current_Turn_Direction = 1 } 
+                        else { A = 0, D = 1, Current_Turn_Direction = -1 }
+                        Last_Turn_Direction = Target_Preference, Turn_Hold_Timer = 10
+                        # print("RAPE")
+                    } else { # if(Turn_Hold_Timer > 0) {
+                        CanRandomlyTurn = 1
+                        
+                        if(!RandomlyTurning | (Turn_Lock[1, number] | Turn_Lock[2, number]))  
+                        { # print("???? WHAT THE FUCk")
+                            A = 0, D = 0, Current_Turn_Direction = 0
+                            if(Turn_Hold_Timer == 0) { Last_Turn_Direction = 0 }
+                        } # else { print("??? HMP") }
+                    }
+                }
+            } else
+            { 
+                if(Has_Target & Target_Preference != 0) {
+                    if(Target_Preference == 1) { A = 1, D = 0, Current_Turn_Direction = 1 } 
+                    else { A = 0, D = 1, Current_Turn_Direction = -1 }
+                    Last_Turn_Direction = Target_Preference, Turn_Hold_Timer = 10
+                    # print("RAPE")
+                } else { # if(Turn_Hold_Timer > 0) {
+                    CanRandomlyTurn = 1
+                    
+                    if(!RandomlyTurning | (Turn_Lock[1, number] | Turn_Lock[2, number])) 
+                    { # print("WHAT THE FUCk!!!!")
+                        A = 0, D = 0, Current_Turn_Direction = 0
+                        if(Turn_Hold_Timer == 0) { Last_Turn_Direction = 0 }
+                    } # else { print("HMmmmmmmmmm") }
+                }
+            }
+            
+            # print(CanRandomlyTurn)
+            
+            if(((Current_Turn_Direction != 0) & changed(Current_Turn_Direction)) & !Turn_Lock[1, number] & !Turn_Lock[2, number]) {
+                updateOscillationHistory(Current_Turn_Direction)
+                # print(Current_Turn_Direction)
+                if(detectOscillation()) {
+                    Oscillation_Lock_Timer = Oscillation_Lock_Timer_Delay
+                    Oscillation_History = table()
+                    Last_Turn_Direction = 0
+                    Turn_Hold_Timer = 0
+                    Turn_Lock[1, number] = 1
+                    # print("Oscillation detected - locking straight movement")
+                }
+            }
+            
+            if(Oscillation_Lock_Timer > 0) {
+                Oscillation_Lock_Timer-- 
+            }
+            
+            if(!Oscillation_Lock_Timer && changed(Oscillation_Lock_Timer)) 
+            {
+                Turn_Lock[1, number] = 0
+            }
+            
+            if(Oscillation_History_Remove_Timer > 0) {
+                Oscillation_History_Remove_Timer-- 
+            }
+            
+            if(!Oscillation_History_Remove_Timer && changed(Oscillation_History_Remove_Timer)) 
+            {
+                Oscillation_History:remove(1), Oscillation_History_Remove_Timer = Oscillation_History_Remove_Delay#, print(Oscillation_History:count())
+            }
+            
+            if(!changed(Current_Turn_Direction) & (Current_Turn_Direction != 0)) 
+            {
+                if(Consistent_Rotation_Timer > 0) {
+                    Consistent_Rotation_Timer-- 
+                }
+                
+                if(!Consistent_Rotation_Timer && changed(Consistent_Rotation_Timer)) 
+                {                    
+                    Oscillation_History = table()
+                    
+                    Turn_Lock[2, number] = 1, Consistent_Rotation_Timer = Consistent_Rotation_Timer_Delay, Consistent_Rotation_Timer_Unlock = Consistent_Rotation_Timer_Unlock_Delay
+                    # print("lock 2")
+                }
+            }
+            
+            if(Consistent_Rotation_Timer_Unlock > 0 & Turn_Lock[2, number] == 1) {
+                Consistent_Rotation_Timer_Unlock-- 
+            }
+            
+            if(!Consistent_Rotation_Timer_Unlock && changed(Consistent_Rotation_Timer_Unlock)) 
+            {
+                Turn_Lock[2, number] = 0#, print("GIANT!!!")
+            }
+            
+            # print(array(W, A, S, D))
+                                
+            # print(Turn_Lock)
+            
+            if(clk("Reverse")) { 
+                
+                 Reversing = 1
+                
+                timer("ReverseTimeout", 300)
+            } elseif(clk("ReverseTimeout")) { 
+                
+                Reversing = 0
+            
+              stoptimer("Reverse")
+              stoptimer("ReverseTimeout")
+            }
+            
+            if(BACK < 144 & Reversing != 0) { Reversing = 0 }
+            
+            local Dynamic_BrakeSpeed = clamp(((SteeringBrakes + Speed) / (Ang_Speed + 1)), 0.1, 1)
+            
+            local Temp_Pitch_Important = Temp_Vec2:y()
+            # print(Temp_Pitch_Important)
+            
+            if(!Neutral_Pivot & (((FRONT > 320) | ((BACK < 144) & (Temp_Pitch_Important >= -(Ang_Ignore_Threshold*1.5)))) | (Front_Ang <= Ang_Ignore_Threshold)) & ((GROUNDCHECK_Front < 420) & (Temp_Pitch_Important <= (Ang_Ignore_Threshold*1.5))  & (Temp_Pitch_Important >= -(Ang_Ignore_Threshold*1.5))) & (!Reversing & (FRONT > 30))) 
+            { 
+                if(((HuntY <= -80) & (HuntY >= -130)) & (((Distance < Complete_Theshold_Dist & Distance > 0) | (FollowDistance < Complete_Theshold_Dist & FollowDistance > 0) | (Friendly_AI_FollowDistance < Complete_Theshold_Dist & Friendly_AI_FollowDistance > 0)) & BACK > 144) & !Refill) 
+                {
+                    if(!A&!D) { W = 0, S = 1, Throttle = 100 } 
+                    else { W = 0, S = 1, Throttle = clamp(100 - (Ang_Speed - clamp((Speed / (Ang_Speed + 2)), 0, Ang_Speed - 1)), 60, 100)  } 
+                    # W = 0, S = 1, Throttle = 100
+                    timer("Reverse", 100) 
+                } 
+                elseif(!Reversing) 
+                { 
+                    if(!A&!D) { W = 1, S = 0, Throttle = 100 } 
+                    else { W = 1, S = 0, Throttle = clamp(100 - (Ang_Speed - clamp((Speed / (Ang_Speed + 2)), 0, Ang_Speed - 1)), 60, 100) } 
+                    # W = 1, S = 0, Throttle = 100
+                } 
+            } elseif(!Neutral_Pivot & ((BACK > 144) | ((Back_Ang <= Ang_Ignore_Threshold) & (BACK > 30))) & ((GROUNDCHECK_Back < 420) & (Temp_Pitch_Important >= -(Ang_Ignore_Threshold*1.5)) & (Temp_Pitch_Important <= (Ang_Ignore_Threshold*1.5)))) 
+            { 
+                if(!A&!D) { W = 0, S = 1, Throttle = 100 }
+                else { W = 0, S = 1, Throttle = clamp(100 - (Ang_Speed - clamp((Speed / (Ang_Speed + 2)), 0, Ang_Speed - 1)), 60, 100) } 
+                # W = 0, S = 1, Throttle = 100
+                timer("Reverse", 100)
+            }
+            
+            if((Turn_Lock[1, number] == 0) & (Turn_Lock[2, number] == 0) & (Consistent_Rotation_Timer <= (Consistent_Rotation_Timer_Delay / 2)) & TURN & !S) 
+            { 
+                local Can_Escape = 0
+                
+                # print("SIGMOID!!!!")
+                
+                if(A & LEFT > 0.99 & Left_Ang >= Ang_Ignore_Threshold) { Can_Escape = 1 } 
+                elseif(D & RIGHT > 0.99 & Right_Ang >= Ang_Ignore_Threshold) { Can_Escape = 1 }
+                elseif(FRONT > 450 & Front_Ang >= Ang_Ignore_Threshold) { Can_Escape = 1 }
+                
+                # if(Neutral_Pivot & !changed(Neutral_Pivot)) 
+                # { 
+                #     if(!clk("PivotTimer")) { timer("PivotTimer", 2000) }
+                #     elseif(clk("PivotTimer")) { print("PIVOT 22222"), Can_Escape = 1, stoptimer("PivotTimer") }
+                # }
+                # else { stoptimer("PivotTimer") }
+            
+                # if((Speed+Ang_Speed) > Neutral_Pivot_Threshold_Speed_Maximum & !Can_Escape)
+                # { Neutral_Pivot = 0 }
+                
+                # if((((Speed+Ang_Speed) <= Neutral_Pivot_Threshold_Speed_Minimum) & ((Speed+Ang_Speed) > 0) & !Can_Escape))
+                # { 
+                    # if(!Can_Escape) { Neutral_Pivot = 1 }
+                    # else { Neutral_Pivot = 0 }
+                # }
+                                    
+                if(Can_Escape) { Neutral_Pivot = 0 }
+                else { Neutral_Pivot = 1 }
+                
+            } elseif(S & Neutral_Pivot) { Neutral_Pivot = 0 } else { Neutral_Pivot = 0 }
+            
+            if(!Neutral_Pivot) 
+            {
+                if(W) 
+                { 
+                    if(!Use_8_Speed_As_Reverse) 
+                    {
+                            RTransfer["Gear",number]=1, 
+                            LTransfer["Gear",number]=1, 
+                            Gear = Default_Gear
+                    } else 
+                    {
+                        if(Use_Transfers_As_Reverse) 
+                        {
+                            RTransfer["Gear",number]=Gear_2, 
+                            LTransfer["Gear",number]=Gear_2 
+                        } else 
+                        {
+                            RTransfer["Gear",number]=1, 
+                            LTransfer["Gear",number]=1 
+                        }
+                            Gear = Default_Gear
+                    }
+                    
+                    # if(Speed > Neutral_Pivot_Threshold_Speed_Maximum) 
+                    # { Neutral_Pivot = 0 }
+                    
+                    # if(Speed < Neutral_Pivot_Threshold_Speed_Minimum) 
+                    # { Neutral_Pivot = 1 }
+                } 
+                
+                if(S) 
+                { # print("LOL")
+                    if(!Use_8_Speed_As_Reverse) 
+                    {
+                        if(Use_Transfers_As_Reverse) 
+                        {
+                            RTransfer["Gear",number]=2, 
+                            LTransfer["Gear",number]=2, 
+                            Gear = Default_Gear
+                        } elseif(!Use_Transfers_As_Reverse) 
+                        {
+                            RTransfer["Gear",number]=1, 
+                            LTransfer["Gear",number]=1,
+                            Gear = Reverse_Gear
+                        }
+                    } else 
+                    {
+                        if(Use_Transfers_As_Reverse) 
+                        {
+                            RTransfer["Gear",number]=Gear_2, 
+                            LTransfer["Gear",number]=Gear_2, 
+                            Gear = Default_Gear
+                        } elseif(!Use_Transfers_As_Reverse) 
+                        {
+                            RTransfer["Gear",number]=1, 
+                            LTransfer["Gear",number]=1,
+                            Gear = Reverse_Gear
+                        }
+                    }
+                    
+                    # Neutral_Pivot = 0
+                } 
+            }
+            
+            if((A|D)&((Turn_Lock[1, number] == 0) & (Turn_Lock[2, number] == 0)))
+            { if(!Neutral_Pivot) 
+                { # print("FUCK YOUUUUU!!!!!") 
+                    
+                    # print("RAPE")
+                    
+                    # if(D) 
+                    if((D&W)|(A&S))
+                    { # print("RIGHT")
+                        LTransfer["Left Clutch",number]=1,
+                        LTransfer["Right Clutch",number]=1,
+                        LTransfer["Left Brake",number]=Dynamic_BrakeSpeed,
+                        LTransfer["Right Brake",number]=Dynamic_BrakeSpeed,
+                    
+                        RTransfer["Right Clutch",number]=Clutch,
+                        RTransfer["Left Clutch",number]=Clutch,    
+                        RTransfer["Right Brake",number]=0,
+                        RTransfer["Left Brake",number]=0 
+                    } # elseif(A) 
+                    
+                    if((A&W)|(D&S)) 
+                    { # print("LEFT")
+                        RTransfer["Right Clutch",number]=1,
+                        RTransfer["Left Clutch",number]=1,
+                        RTransfer["Left Brake",number]=Dynamic_BrakeSpeed,
+                        RTransfer["Right Brake",number]=Dynamic_BrakeSpeed,
+                        
+                        LTransfer["Left Clutch",number]=Clutch,
+                        LTransfer["Right Clutch",number]=Clutch,
+                        LTransfer["Left Brake",number]=0,
+                        LTransfer["Right Brake",number]=0
+                     }
+                 } elseif(Neutral_Pivot) 
+                { # print("NIGGER!!!!!") 
+                    if((D&W)|(A&S))
+                    # if(D)
+                    { 
+            
+                        LTransfer["Gear",number]=2,
+                        LTransfer["Left Clutch",number]=0,
+                        LTransfer["Right Clutch",number]=0,
+                        LTransfer["Left Brake",number]=0,
+                        LTransfer["Right Brake",number]=0,
+                        
+                        RTransfer["Gear",number]=1, 
+                        RTransfer["Right Clutch",number]=0,
+                        RTransfer["Left Clutch",number]=0,
+                        RTransfer["Right Brake",number]=0,
+                        RTransfer["Left Brake",number]=0 
+                    } # elseif(A) 
+                    
+                    if((A&W)|(D&S))
+                    { 
+                        RTransfer["Gear",number]=2, 
+                        RTransfer["Right Clutch",number]=0,
+                        RTransfer["Left Clutch",number]=0,
+                        RTransfer["Right Brake",number]=0,
+                        RTransfer["Left Brake",number]=0   
+                                  
+                        LTransfer["Gear",number]=1,
+                        LTransfer["Left Clutch",number]=0,
+                        LTransfer["Right Clutch",number]=0,
+                        LTransfer["Left Brake",number]=0,
+                        LTransfer["Right Brake",number]=0
+                    }
+                }
+                
+                # print(Turn_Lock)
+                
+            } # elseif((Turn_Lock[1, number] == 1) | (Turn_Lock[2, number] == 1)) { print("MAGGOT!!!") }
+            
+            
+            elseif(!A&!D&!Neutral_Pivot) 
+            { 
+                if(Brake_Status) 
+                { # print("BRAKE!!!!")
+                    LTransfer["Left Clutch",number]=1,
+                    LTransfer["Right Clutch",number]=1,
+                
+                    RTransfer["Right Clutch",number]=1,
+                    RTransfer["Left Clutch",number]=1,
+            
+                    RTransfer["Left Brake",number]=Brake_Force,
+                    RTransfer["Right Brake",number]=Brake_Force,
+                    
+                    LTransfer["Left Brake",number]=Brake_Force,
+                    LTransfer["Right Brake",number]=Brake_Force
+                } 
+                
+                if(!Brake_Status) 
+                { # print("FUCK YOUUUUU!!!!!") 
+                    LTransfer["Left Clutch",number]=Clutch,
+                    LTransfer["Right Clutch",number]=Clutch,
+                
+                    RTransfer["Right Clutch",number]=Clutch,
+                    RTransfer["Left Clutch",number]=Clutch,
+                    
+                    RTransfer["Left Brake",number]=0,
+                    RTransfer["Right Brake",number]=0,
+                    
+                    LTransfer["Left Brake",number]=0,
+                    LTransfer["Right Brake",number]=0
+                } # else 
+                # { 
+    #[                LTransfer["Left Clutch",number]=0,
+                    LTransfer["Right Clutch",number]=0,
+                
+                    RTransfer["Right Clutch",number]=0,
+                    RTransfer["Left Clutch",number]=0,
+                    
+                    RTransfer["Left Brake",number]=0,
+                    RTransfer["Right Brake",number]=0,
+                    
+                    LTransfer["Left Brake",number]=0,
+                    LTransfer["Right Brake",number]=0]#
+                # } # else { }
+            }
+            
+            stoptimer("Movement")
+        }
+    }
+} 
+
+if(!Power) 
+{ 
+    interval(Frequency), 
+    TurretFire = 0, 
+    ActivateTurret = 0,
+    RepeatOnFinish = 0, 
+    ForceCancel = 1
+} else { interval(Frequency) }
+
+## Resets Chip:
+
+if(dupefinished()) { reset() }
+
+runOnLast(1)
+
+if(last()) 
+{ 
+    if(AI_Team_Members[1, table]:exists(AI_Identification)) 
+    { 
+        if(Scouts[4, table][1, array][2, string] == AI_Identification) 
+        {
+            print(AI_Identification + " Declining Command")
+            Scouts[4, table] = table()
+        }
+        
+        print("Begone with thy heracy machine..."), 
+        AI_Team_Members[1, table]:remove(AI_Identification) 
+    }  
+}
+
+# OpsCPUus = vec2(ops(), cpuUsage()*1000000)
+
