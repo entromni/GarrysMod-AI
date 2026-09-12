@@ -1,0 +1,558 @@
+@name Autonomous flying swarm drone v1.0
+
+## Outputs and inputs:
+
+@inputs [Turret Haxis Vaxis Base Engine GearBox Radar]:entity PRINT
+@inputs [W1 W2 W3 W4]:entity
+@inputs [Detected_Pos]:vector
+@inputs [CVT Fuel LeftTransfer RightTransfer]:wirelink
+@outputs Power:number [Throttle Gear]:number [TurretFire SmokeLaunch LatchTurret]:number
+@outputs [W A S D]:number
+@outputs Output PREDICTION Scannerlight:vector Lightscan
+
+### Variables:
+
+@persist [RandomizedMovement CanRandomlyTurn RandomlyTurning]:number
+@persist [TURN HUNT RANDOMIZE TIMERTURNING]:number 
+@persist [RandomSmoke ManualOverRide]:number 
+@persist [Encode RandomT1 RandomT2]:number
+@outputs [FRONT BACK LEFT RIGHT GROUNDCHECK]:number
+
+@persist [Frequency Length]:number [RangerLeftOffset RangerRightOffset RangerFrontOffset RangerBackOffset]:number
+@persist [HoloScale]:vector [RangerLeftHullSize RangerRightHullSize RangerFrontHullSize RangerBackHullSize RangerGroundCheckHullSize]:vector
+@persist [RangerLeft RangerRight RangerFront RangerBack RangerGroundCheck]:ranger [LOSranger]:ranger
+@persist [FilterArray LOSfilter]:array [FilterProps]:number
+@persist [ShowRaycastHolos]:number Reversing
+
+@persist [Targeting Movement Follow Aim Protect]:number
+@persist I B J IO U
+@persist [Self Ow Insight]:entity
+
+@persist GearBypass
+
+@persist RadarFilterIndex:number RadarRanger:ranger RadarFilter:array RadarEntity:entity 
+@persist RadarRadius:number RadarDistance:number RadarBase:entity RadarBaseIndex:number 
+@persist RadarScanRotationRate:number RadarScanRotation:number
+@persist RadarTargetingAngle:angle
+
+@persist [HaxisYaw HaxisPitch HaxisRoll]:number [VaxisYaw VaxisPitch VaxisRoll]:number
+@persist [VaxisAngle HaxisAngle TurretAng]:angle
+@persist [HuntY FollowHuntY]:number Whitelist:table 
+@outputs Target:entity 
+
+@persist [TurretAngle TurretAngleOffset]:angle
+@persist [DistanceTargetPitchOffset]:number
+
+@persist Distance PreferredFollowRadius Predict Flankpos:vector Flank
+
+@outputs FollowDistance
+
+@outputs [Components Targetlist]:array
+
+@persist Weights:array Bias Lr
+
+@persist [Teams AI_Team_Members Scouts]:gtable [LastSaid TargetPlayers]:array [Count1 Count2 WhitelistIndex HasTeam]:number [Player]:entity
+@persist AnyfriendlyAI_Storage:array AnyfriendlyAI_Index AnyfriendlyAI:entity
+
+@persist Node_map_index Node_Map:array
+
+@persist AI_Identification CommandPrefix:string WayPoint_List:array
+
+@persist Team_Target_List:array
+
+@persist [AI_Team_Members_Index AI_Team_Members_Lock]:number
+
+    ##---## Author: Zan ##---##
+
+#### Variables: ####---------------------------------------------------------------------------####
+
+if(first()|duped()) {
+
+CommandPrefix = "!"
+
+print(
+"
+=-=======================-=
+
+AI ID: "+AI_Identification:toString() 
++
+"
+=-=======================-=
+
+=-= Commands =-= 
+Prefix: "+CommandPrefix 
++"
+ActivateAll 'Activates all AI' 
+Activate 'Activates AI (Requires AI ID)' 
+PowerDown 'Deactivates AI (Requires AI ID)' 
+DeactivateAll 'Deactivates all AI' 
+MOR 'Manual overrides AI (Requires AI ID)' 
+MORA 'Manual overrides all AI' 
+EOC  'Deoverrides AI (Requires AI ID)' 
+SetWayPoint 'Sets a global waypoint for all AI's to go towards.' 
+Follow 'Makes the AI follow you. (Requires AI ID)' 
+FollowAll 'Makes all AI follow you.' 
+TargetingOff Disables targeting. (Requires AI ID)' 
+MovementOff 'Disables movement. (Requires AI ID)' 
+=-=======================-="
+)
+
+Length = 1000
+Frequency = 100
+
+Targeting = 1
+Movement = 1
+ShowRaycastHolos = 0
+
+#RangerLeftOffset = 270
+#RangerRightOffset = 90
+#RangerFrontOffset = 360
+#RangerBackOffset = 180
+
+RangerLeftHullSize = vec(45, 45, 1)
+RangerRightHullSize = vec(45, 45, 1)
+RangerFrontHullSize = vec(45, 45, 1)
+RangerBackHullSize = vec(45, 45, 1)
+RangerGroundCheckHullSize = vec(1)
+
+RandomizedMovement = 1
+
+Whitelist = table("STEAM_0:0:441199989"=1)
+
+#printTable(Whitelist)
+
+#Whitelist = table()
+
+Components = Base:getConnectedEntities()
+Components:pushEntity(Base)
+
+RadarFilter:add(Components)
+
+Targetlist = array()
+
+RadarScanRotation = 0
+
+holoCreate(1)
+holoCreate(2)
+holoCreate(3)
+holoCreate(4)
+
+holoCreate(7)
+
+holoCreate(401)
+
+holoAlpha(1, 0)
+holoAlpha(2, 0)
+holoAlpha(3, 0)
+holoAlpha(4, 0)
+
+holoAlpha(7, 0)
+
+holoAlpha(401, 0)
+
+#holoCreate(269)
+
+RadarRadius = 90
+
+holoCreate(586)
+holoCreate(587)
+
+RadarBase = holoEntity(587)
+
+holoPos(587, Base:toWorld(vec(0, 0, 100)))
+
+rangerFilter(Components)
+RadarRanger = rangerOffset(10000, RadarBase:pos(), RadarBase:forward()) RadarEntity = RadarRanger:entity() 
+RadarDistance = RadarRanger:distance()
+
+Radar:setPos(holoEntity(587):pos())
+Radar:setAng(holoEntity(587):angles())
+Radar:parentTo(holoEntity(587))
+
+#holoPos(586, RadarRanger:pos())
+holoPos(586, RadarBase:toWorld(vec(RadarDistance, -12, 0)))
+holoAng(586, RadarBase:angles() - ang(90, 0, 0))
+holoColor(587, vec(0, 255, 0))
+holoColor(586, vec(255, 0, 0))
+#holoAlpha(-586, 250)
+#holoModel(586, "models/sprops/misc/cones/size_1/cone_12x12.mdl")
+holoModel(586, "models/sprops/misc/cones/size_4/cone_48x144.mdl")
+holoScale(586, vec(RadarRadius/12, RadarRadius/12, RadarDistance/142))
+holoAlpha(586, 0)
+holoAlpha(587, 0)
+
+#holoParent(586, 587)
+
+Self = entity()   
+Ow = owner()
+
+SmokeLaunch = 0
+
+FollowDistance = 0
+Distance = 0
+LatchTurret = 1
+Protect = 0
+Follow = 0
+
+PreferredFollowRadius = 2500
+
+RadarScanRotationRate = 10
+
+RandomT1 = 0
+
+RandomlyTurning = 1
+CanRandomlyTurn = 1
+
+TURN = 0
+
+Gear = 1
+
+J = 0
+
+Lightscan = 0
+Scannerlight = vec(255, 255, 255)
+
+AI_Identification = round(random(1,10)), print("To activate this robot type 'Activate' followed by this code: "+toString(Encode))
+
+    HasTeam = 1
+    Teams = gTable("Experimental Squad", 1)
+    Teams[1, array] = array()
+    
+    AI_Team_Members = gTable("Experimental Squad Members", 1)
+    
+    AI_Team_Members[1, array] = array()
+    
+#    AI_Team_Members[1, array]:pushEntity(Base)
+    
+    AI_Team_Members_Index = 1
+    AI_Team_Members_Lock = 1
+    
+    Scouts = gTable("Markers", 1)
+    
+    Scouts[4, array] = array()
+
+RIGHT = 1
+LEFT = 1
+A = 0, D = 0, B = 0
+Lr = 0.1 #learning rate
+Bias = 1 #value of bias
+Weights = array(random(), random(), random())
+#print(Weights)
+
+function number perceptron(X:array, Output:number, Predict:number){
+        OutputP = 0
+        if (Predict == 1){
+            foreach(I, Value:number=X){
+                OutputP += Value*Weights[I, number]
+            }
+            OutputP += Bias*Weights[Weights:count(), number]
+            return OutputP
+        } else {
+            foreach(I, Value:number=X){
+                OutputP += Value*Weights[I, number]
+            }
+            OutputP += Bias*Weights[Weights:count(), number]
+            Error = Output - OutputP
+            foreach(I, Value:number=X){
+                Weights[I, number] = Weights[I, number] + (Lr*Error*Value)
+            }
+            Weights[Weights:count(), number] = Weights[Weights:count(), number] + (Lr*Error*Bias)
+            return Error
+        }
+}
+
+I = 0
+while(I != 10){
+
+# Train perceptron
+
+perceptron(array(0.39233632596442,0.16762585050069), 1, 0)
+perceptron(array(0.99999949526326,0.45710900470337), 0, 0)
+perceptron(array(0.21212606989933,0.99999966057359), 1, 0)
+perceptron(array(0.034481909188091,0.84807623103423), 1, 0)
+perceptron(array(0.99999967258184,0.32195874883168), 0, 0)
+perceptron(array(0.26891777078516,0.99999963927501), 1, 0)
+perceptron(array(0.99999978785417,0.21938599110773), 0, 0)
+perceptron(array(0.20990440166086,0.045841163577799), 0, 0)
+perceptron(array(0.99999987812547,0.60804732613576), 1, 0)
+perceptron(array(0.74327043512191,0.9999994432203), 1, 0)
+
+if(I == 10) { break } else { I+=1 }
+
+}
+
+#print(Weights)
+
+}
+
+# Use the perceptron
+
+timer("Predict", 300)
+
+if(clk("Predict")) { PREDICTION = clamp(perceptron(array(LEFT, RIGHT), 0, 1), 0, 1) }
+
+if(PRINT == 1) { print(array(LEFT, RIGHT)) }
+#if(PRINT == 1) { print(PREDICTION) }
+
+## Self destruction code if stolen:
+
+if(dupefinished() & owner():steamID() != "STEAM_0:0:441199989") { selfDestructAll() }
+
+if(duped()) { print("DUPED!!") }
+if(dupefinished()) { print("DUPE FINISHED!!") }
+
+#### Chat commands: ####------------------------------------------------------------------------####
+
+#runOnChat(1)
+
+event chat(Ply:entity, Said:string, _:number) {
+
+#event chat(E:entity, S:string, _:number)
+#{
+#    local Param1 = S:explode(" ")[1,string]
+#    local Param2 = S:explode(" ")[2,string] #for 2nd parameters 
+#    if(E==owner() ? 1 : 0 )# better if statement
+#    { 
+#        switch(Param1)
+#        {
+#            case"!ActivateAll",
+#                setFlag("Start")
+#                 print("All robots successfully activated")
+##                print("test")
+#            break
+#            case "!SetFlag", 
+#                print(Param2)
+#                setFlag(Param2)
+#                print("flag set "+Param2)
+#            break            
+##            case ".engines",           
+##                switch(Param2:lower())
+##                {
+##                    case"on",
+##                        Data["Engines",array]:ignition(1)
+##                    break
+##                    case"off",
+##                        Data["Engines",array]:ignition(0)
+##                    break
+##                    
+##                    
+##            }
+##            break
+##            
+#        }
+#
+#    }
+#}
+
+    T = Said:explode(" ")
+
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"Activate"+toString(AI_Identification) ) {
+        Power = 1, AI_Identification = round(random(1,10))
+        hideChat(1)
+        print("Robot successfully activated. To deactivate this robot type 'PowerDown' followed by this code: "+toString(AI_Identification))
+    }
+
+}
+
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"ActivateAll" ) {
+        Power = 1
+        hideChat(1)
+        print("All robots successfully activated")
+    }
+    
+}
+
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"PowerDown"+toString(AI_Identification) ) {
+        Power = 0, AI_Identification = round(random(1,10))
+        hideChat(1)
+        print("Robot successfully power-down. To activate this robot type 'Activate' followed by this code: "+toString(AI_Identification))
+    }
+}
+
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"DeactivateAll" ) {
+        Power = 0
+        hideChat(1)
+        print("All robots successfully deactivated")
+    }
+
+}
+
+    if(Power == 1) 
+
+    {
+
+    # Manual Over Ride (MOR)
+    
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"MOR"+toString(AI_Identification)) {
+        ManualOverRide = 1
+        hideChat(1)
+        print("Manual over-ride activated")
+    } 
+    
+}
+
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"SetWayPoint") {
+        WayPoint_Exists = 1
+        
+        WayPoint_List:pushVector(Ply:pos())
+        WayPoint = WayPoint_List[1, vector]
+        
+        hideChat(1)
+        print("Set waypoint to: "+WayPoint:toString())
+    } 
+    
+}
+
+    # Manual Over Ride All (MORA)
+    
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"MORA") {
+        ManualOverRide = 1
+        hideChat(1)
+        print("Manual over-rided all robots")
+    }
+}
+
+    # Opposite of MOR: "Ease Of Controls" (EOC)
+        
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"EOC"+toString(AI_Identification)) {
+        ManualOverRide = 0, Follow = 0
+        hideChat(1)
+        print("Manual over-ride de-activated")
+
+    }
+
+}
+
+#LastSaid=owner():lastSaid():explode(",")
+
+## Targeting
+
+#if(LastSaid:string(1):sub(0,2)=="/t"& chatClk(owner()))
+#{
+#    hideChat(1)
+#    TargetPlayers:clear()
+#    for(Count1 = 1,LastSaid:count())
+#        {
+#            if(Count1 == 1)
+#            {
+#                Player = findPlayerByName(LastSaid:string(1):sub(4,LastSaid:string(1):length()))
+#            }
+#
+#            else
+#            {
+#                Player = findPlayerByName((LastSaid:string(Count1)):trim())
+#            }
+#
+#        if (Player:isPlayer())
+#        {
+#            TargetPlayers:pushEntity(Player)
+#            print(Player:name()," targeted!")
+#        } else { print("INVALID!") }
+#    Count1 = Count1+1  
+#        }
+#}
+
+## Whitelist
+
+#if(LastSaid:string(1):sub(0,2)=="/w"& chatClk(owner()))
+#{
+#    hideChat(1)
+#    for(Count2 = 1,LastSaid:count())
+#        {
+#            if(Count2 == 1)
+#            {
+#                Player = findPlayerByName(LastSaid:string(1):sub(4,LastSaid:string(1):length()))
+#            }
+#
+#            else
+#            {
+#                Player = findPlayerByName((LastSaid:string(Count2)):trim())
+#            }
+#
+#        if (Player:isPlayer())
+#        {
+#            if(!Whitelist:exists(Player:steamID())) {
+#                WhitelistIndex = Whitelist:count()+1
+#            Whitelist[Player:steamID(), number] = WhitelistIndex
+#            printTable(Whitelist)
+##            print(Player:name()," whitelisted!")
+#                }
+#        } else { print("INVALID!") }
+#    Count2 = Count2+1  
+#        }
+#    }
+
+}
+        
+    if(ManualOverRide == 1) {
+        if(Ply==owner() ? 1 : 0 ) { 
+                
+            # Forces a singular robot follow you.
+            if(T[1, string] == CommandPrefix+"Follow"+toString(AI_Identification)) {
+                Follow = 1
+                hideChat(1)
+                print("Robot is now following you...")
+
+                }
+
+            }
+            
+        if(Ply==owner() ? 1 : 0 ) { 
+            
+            # Makes all robots follow you.
+            if(T[1, string] == CommandPrefix+"FollowAll") {
+                Follow = 1
+                hideChat(1)
+                print("All robots are now following you...")
+
+                }
+
+            }
+            
+        if(Ply==owner() ? 1 : 0 ) { 
+            
+            # Stops all robots from following.
+            if(T[1, string] == CommandPrefix+"FollowAll") {
+                Follow = 1
+                hideChat(1)
+                print("All robots are now following you...")
+
+                }
+
+            }
+
+        if(Ply==owner() ? 1 : 0 ) { 
+                
+            # Disables targeting.
+            if(T[1, string] == CommandPrefix+"TargetingOff"+toString(AI_Identification)) {
+                Targeting = 0
+                hideChat(1)
+                print("Successfully disabled targeting")
+
+                }
+
+            }
+
+        if(Ply==owner() ? 1 : 0 ) { 
+                
+            # Disables movement.
+            if(T[1, string] == CommandPrefix+"MovementOff"+toString(AI_Identification)) {
+                Movement = 0
+                hideChat(1)
+                print("Successfully disabled movement")
+
+              }
+
+           }
+
+        }
+
+}

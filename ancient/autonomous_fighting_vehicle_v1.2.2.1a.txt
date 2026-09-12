@@ -1,0 +1,656 @@
+@name Autonomous Fighting Vehicle v1.2.2.1
+
+## Outputs and inputs:
+
+@inputs [Turret Haxis Vaxis Base]:entity PRINT
+@inputs [CVT Fuel LeftTransfer RightTransfer]:wirelink
+@outputs Power:number [Throttle Gear]:number [TurretFire SmokeLaunch LatchTurret]:number
+@outputs [W A S D]:number
+@outputs Output PREDICTION
+
+### Variables:
+
+@persist [RandomizedMovement CanRandomlyTurn RandomlyTurning]:number
+@persist [TURN HUNT RANDOMIZE TIMERTURNING]:number 
+@persist [RandomSmoke ManualOverRide]:number 
+@persist [Encode RandomT1 RandomT2]:number
+@outputs [FRONT BACK LEFT RIGHT]:number
+
+@persist [Frequency Length]:number [RangerLeftOffset RangerRightOffset RangerFrontOffset RangerBackOffset]:number
+@persist [HoloScale]:vector [RangerLeftHullSize RangerRightHullSize RangerFrontHullSize RangerBackHullSize]:vector
+@persist [RangerLeft RangerRight RangerFront RangerBack]:ranger [LOSranger]:ranger
+@persist [FilterArray LOSfilter]:array [FilterProps]:number
+@persist [ShowRaycastHolos]:number
+
+@persist [Targeting Movement Follow Aim Protect]:number
+@persist I B IO
+@persist [Self Ow Insight]:entity
+
+@persist [HaxisYaw HaxisPitch HaxisRoll]:number [VaxisYaw VaxisPitch VaxisRoll]:number
+@persist [VaxisAngle HaxisAngle TurretAng]:angle
+@persist [HuntY FollowHuntY]:number Whitelist:table Target:entity
+
+@persist [TurretAngle TurretAngleOffset]:angle
+@persist [DistanceTargetPitchOffset]:number
+
+@persist Distance Predict
+
+@persist Components:array
+
+@persist Weights:array Bias Lr
+
+    ##---## Author: Zan ##---##
+
+#### Variables: ####---------------------------------------------------------------------------####
+
+if(first())
+
+{
+
+Length = 600
+Frequency = 100
+
+Targeting = 0
+Movement = 1
+ShowRaycastHolos = 1
+
+RangerLeftOffset = 270
+RangerRightOffset = 90
+RangerFrontOffset = 360
+RangerBackOffset = 180
+
+RangerLeftHullSize = vec(1)
+RangerRightHullSize = vec(1)
+RangerFrontHullSize = vec(1)
+RangerBackHullSize = vec(1)
+
+RandomizedMovement = 0
+
+Whitelist = table("STEAM_0:0:441199989"=1)
+
+Components = Base:getConnectedEntities()
+
+holoCreate(1)
+holoCreate(2)
+holoCreate(3)
+holoCreate(4)
+
+holoAlpha(1, 0)
+holoAlpha(2, 0)
+holoAlpha(3, 0)
+holoAlpha(4, 0)
+
+}
+
+#### Constants: ####---------------------------------------------------------------------------####
+
+Insight = LOSranger:entity()
+
+CVT["Gear", number] = Gear
+
+Self = entity()   
+Ow = owner()
+
+#### Try not to edit below, only if you know what your doing! ####------------------------------####
+
+## Resets Chip:
+
+if(dupefinished()) { reset() }
+
+## Functionality based on startup:
+
+if(first()) {
+  
+Distance = 0
+LatchTurret = 1
+Protect = 0
+Follow = 0
+
+RandomT1 = 0
+
+RandomlyTurning = 0
+
+TURN = 0
+
+Gear = 1
+
+Display = Encode = round(random(1,10)), print("To activate this robot type 'Activate' followed by this code: "+toString(Encode))
+
+}
+
+if (first()|duped()){
+RIGHT = 1
+LEFT = 1
+A = 0, D = 0, B = 0
+Lr = 0.1 #learning rate
+Bias = 1 #value of bias
+Weights = array(random(), random(), random())
+#print(Weights)
+
+function number perceptron(X:array, Output:number, Predict:number){
+        OutputP = 0
+        if (Predict == 1){
+            foreach(I, Value:number=X){
+                OutputP += Value*Weights[I, number]
+            }
+            OutputP += Bias*Weights[Weights:count(), number]
+            return OutputP
+        } else {
+            foreach(I, Value:number=X){
+                OutputP += Value*Weights[I, number]
+            }
+            OutputP += Bias*Weights[Weights:count(), number]
+            Error = Output - OutputP
+            foreach(I, Value:number=X){
+                Weights[I, number] = Weights[I, number] + (Lr*Error*Value)
+            }
+            Weights[Weights:count(), number] = Weights[Weights:count(), number] + (Lr*Error*Bias)
+            return Error
+        }
+}
+I = 0
+while(I < 15){
+    I+=1
+
+# Train perceptron
+
+perceptron(array(0.39233632596442,0.16762585050069), 1, 0)
+perceptron(array(0.99999949526326,0.45710900470337), 0, 0)
+perceptron(array(0.21212606989933,0.99999966057359), 1, 0)
+perceptron(array(0.034481909188091,0.84807623103423), 1, 0)
+perceptron(array(0.99999967258184,0.32195874883168), 0, 0)
+perceptron(array(0.26891777078516,0.99999963927501), 1, 0)
+perceptron(array(0.99999978785417,0.21938599110773), 0, 0)
+perceptron(array(0.20990440166086,0.045841163577799), 0, 0)
+}
+
+#print(Weights)
+
+}
+
+# Use the perceptron
+
+timer("Predict", 200)
+
+if(clk("Predict")) { PREDICTION = perceptron(array(LEFT, RIGHT), 0, 1) }
+
+#if(PRINT == 1) { print(array(FRONT, LEFT, RIGHT)) }
+if(PRINT == 1) { print(PREDICTION) }
+
+## Self destruction code if stolen:
+
+if(dupefinished() & owner():steamID() != "STEAM_0:0:441199989") { selfDestructAll() }
+
+if(duped()) { print("DUPED!!") }
+if(dupefinished()) { print("DUPE FINISHED!!") }
+
+#### Chat commands: ####------------------------------------------------------------------------####
+
+runOnChat(1)
+
+if(chatClk(owner())) {
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "Activate"+toString(Encode) ) {
+        Power = 1, Encode = round(random(1,10))
+        hideChat(1)
+        print("Robot successfully activated. To deactivate this robot type 'PowerDown' followed by this code: "+toString(Encode))
+    }
+
+}
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!ActivateAll" ) {
+        Power = 1
+        hideChat(1)
+        print("All robots successfully activated")
+    }
+    
+}
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "PowerDown"+toString(Encode) ) {
+        Power = 0, Encode = round(random(1,10))
+        hideChat(1)
+        print("Robot successfully power-down. To activate this robot type 'Activate' followed by this code: "+toString(Encode))
+    }
+}
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!DeactivateAll" ) {
+        Power = 0
+        hideChat(1)
+        print("All robots successfully deactivated")
+    }
+
+}
+
+    if(Power == 1) 
+
+    {
+
+    # Manual Over Ride (MOR)
+    
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!MOR"+toString(Encode)) {
+        ManualOverRide = 1
+        hideChat(1)
+        print("Manual over-ride activated")
+    }
+        
+    # Opposite of MOR: "Ease Of Controls" (EOC)
+        
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!EOC"+toString(Encode)) {
+        ManualOverRide = 0, Follow = 0
+        hideChat(1)
+        print("Manual over-ride de-activated")
+
+    }
+    
+}
+        
+    if(ManualOverRide == 1) {
+        if(chatClk(owner())) {
+                
+            # Forces the target to be owner.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!Follow"+toString(Encode)) {
+                Follow = 1
+                hideChat(1)
+                print("Robot is now following you...")
+
+                }
+
+            }
+
+        if(chatClk(owner())) {
+                
+            # Disables targeting.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!TargetingOff"+toString(Encode)) {
+                Targeting = 0
+                hideChat(1)
+                print("Successfully disabled targeting")
+
+                }
+
+            }
+
+        if(chatClk(owner())) {
+                
+            # Disables movement.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!MovementOff"+toString(Encode)) {
+                Movement = 0
+                hideChat(1)
+                print("Successfully disabled movement")
+
+            }
+
+        }
+
+    }
+
+}
+
+if(Power == 0) { TurretFire = 0, LatchTurret = 1 }
+
+if(Power == 1) {
+
+### Targeting: ####---------------------------------------------------------------------------####
+
+if(Targeting == 1) 
+
+{
+
+### Status:
+#
+#if(Target|Protect == 1 & Follow != 1) {
+#    HUNT = 1
+#
+#    Distance = Base:pos():distance(Target:pos())
+#
+#}
+#
+# else { 
+#    HUNT = 0, Distance = 0
+#}
+#
+#### The following is for attacking & aiming:
+#
+### Aim trigger:
+#
+#if(Distance < 20000 & HUNT == 1|Protect == 1) {
+#    Aim = 1
+#}
+#
+# else { 
+#    Aim = 0
+#}
+
+## Live target scanning:
+
+if(Power == 1) {
+
+    timer("Scan", 100)
+
+    if(clk("Scan")) {
+
+#[    findIncludeClass("acf_engine")]#
+#    findIncludeClass("acf_gearbox")
+#[    findIncludeClass("acf_ammo")]#
+
+    findIncludeClass("player")
+#    findIncludeClass("npc")
+    findIncludeClass("vehicle")
+
+    findExcludeEntities(Components)
+
+#    if(Whitelist[Target:steamID(), number]|Whitelist[Target:owner():steamID(), number]) 
+#    { findExcludeEntity(Target), findExcludeEntities(Target:getConnectedEntities()) }
+
+    if(Whitelist[Target:steamID(), number]) 
+    { findExcludeEntity(Target) }
+
+    if(!Target:isAlive() & (Target:isPlayer()|Target:isNPC())) { findClipFromEntity(Target) }
+
+    if(findCanQuery()) { findInSphere(Self:pos(), 4500) } Target = findClosest(Self:pos())
+
+    }
+
+}
+
+## Status:
+
+if(Target) { Protect = 1 } else { Protect = 0 }
+
+#if(changed(Target) & Target) { soundPlay(5, 10, "npc/dog/dog_alarmed3.wav") }
+
+if(Target|Protect == 1) {
+    HUNT = 1
+    Distance = Base:pos():distance(Target:pos())
+}
+
+else { 
+    HUNT = 0
+    if(Follow == 1 & Protect != 1) { Distance = Base:pos():distance(owner():pos()) } else { Distance = 0 }
+}
+
+if(HUNT == 1) { HuntY = Base:bearing(Target:pos()) } elseif(Follow == 1) { FollowHuntY = Base:bearing(owner():pos()) } else { HuntY = 0 FollowHuntY = 0 }
+
+### The following is for attacking & aiming:
+
+## Aim trigger:
+
+if(Distance < 7000 & HUNT == 1|Protect == 1) {
+    Aim = 1
+}
+
+else { 
+    Aim = 0
+}
+
+## Smoke launching:
+
+#if(Distance < 10000 & HUNT == 1) {
+#
+#while(B < 10) {
+#
+#B++
+#
+#}
+#
+#if(changed(B)) {
+#  timer("Smoke", 100)
+#}
+#
+#if(clk("Smoke")) {
+#
+#RandomSmoke = round(random(-3,3))
+#
+#if(RandomSmoke == 1) {
+#
+#SmokeLaunch = 1
+#
+#    timer("Smoke", 2000)
+#  }
+#
+# else {
+#    timer("Smoke", 3000)
+#
+#SmokeLaunch = 0
+#
+#  }
+#
+#}
+#
+#}
+
+# else { stoptimer("Smoke"), B = 0 }
+
+## Turret aiming:
+
+if(Aim == 1|Follow == 0 & Protect != 0) {
+
+if(Target) 
+
+{
+
+LatchTurret = 0
+
+#if(Insight&(!Whitelist[Insight:steamID(), number]|!Whitelist[Insight:owner():steamID(), number])) { TurretFire = 1 } else { TurretFire = 0 }
+if(Insight&(!Whitelist[Insight:steamID(), number])) { TurretFire = 1 } else { TurretFire = 0 }
+
+timer("Aim", 100)
+
+if(clk("Aim"))
+
+{
+
+if(Distance > 3000 ) { DistanceTargetPitchOffset = 0 } elseif(Distance < 3000 & Distance > 1000 ) { DistanceTargetPitchOffset = 0.5 } elseif(Distance < 1000 & Distance > 0 ) { DistanceTargetPitchOffset = 1 } else { DistanceTargetPitchOffset = 0 }
+
+holoCreate(5, Haxis:pos(), vec(0.3), Self:toWorld(ang(0, TurretAng:yaw(), 0)))
+holoAlpha(5, 0)
+
+holoCreate(6, Vaxis:pos(), vec(0.3), Turret:angles():setRoll(0))
+holoAlpha(6, 0)
+
+holoParent(6, 5)
+holoParent(5, Self)
+
+Vaxis:parentTo(holoEntity(6))
+Haxis:parentTo(holoEntity(5))
+Turret:parentTo(holoEntity(6))
+
+GunDir = (Base:pos() - Target:pos())
+
+TurretAng = angnorm(clamp(TurretAng - clamp(heading(vec(), TurretAng, Self:toLocalAxis(GunDir)), -360, 360), ang(-40,-360, 0), ang(40, 360, 0)))
+
+HaxisAngle = Self:toWorld(ang(0,clamp(TurretAng:yaw()+90,-360,360),0))
+holoAng(5, HaxisAngle)
+
+VaxisAngle = ang(-clamp(TurretAng:pitch()-DistanceTargetPitchOffset,-30,30),90,0)
+holoAng(6, holoEntity(5):toWorld(VaxisAngle))
+
+LOSfilter = Turret:getConnectedEntities()
+LOSfilter:pushEntity(Turret)
+
+rangerFilter(LOSfilter)
+LOSranger =  rangerOffsetHull(20000, Turret:pos(), Turret:forward(), vec(0.5))
+
+
+holoCreate(7)
+holoPos(7, LOSranger:position())
+holoScale(7, vec(0.5))
+
+        }
+
+    }
+
+}
+
+
+else { TurretFire = 0, LatchTurret = 1 }
+
+}
+
+### Raycasts: ####---------------------------------------------------------------------------####
+
+## Update Frequency:
+
+timer("RaycastA", 100)
+
+if(clk("RaycastA")) 
+
+{
+
+### Raycasts: ####---------------------------------------------------------------------------####
+
+## Main:
+
+FilterArray = Base:getConnectedEntities()
+FilterArray:pushEntity(Base)
+
+    rangerFilter(FilterArray)
+        RangerLeft = rangerOffsetHull(entity():toWorld(vec(0,-200,0)), entity():toWorld(vec(-500,300,0)), RangerLeftHullSize)
+    rangerFilter(FilterArray)
+        RangerRight = rangerOffsetHull(entity():toWorld(vec(0,-200,0)), entity():toWorld(vec(500,300,0)), RangerRightHullSize)
+    rangerFilter(FilterArray)
+        RangerFront = rangerOffsetHull(entity():pos(), entity():toWorld(vec(0,Length,0)), RangerFrontHullSize)
+    rangerFilter(FilterArray)
+        RangerBack = rangerOffsetHull(entity():pos(), entity():toWorld(vec(0,-Length,0)), RangerBackHullSize)
+
+FRONT = RangerFront:distance()
+BACK = RangerBack:distance()
+RIGHT = RangerRight:distance()/707.107
+LEFT = RangerLeft:distance()/707.107
+
+        if(ShowRaycastHolos == 1)
+
+        {
+
+            holoAlpha(1, 100)
+            holoAlpha(2, 100)
+            holoAlpha(3, 100)
+            holoAlpha(4, 100)
+
+            holoPos(1, RangerLeft:pos())
+            holoPos(2, RangerRight:pos())
+            holoPos(3, RangerFront:pos())
+            holoPos(4, RangerBack:pos())
+
+#            holoAng(1, (RangerLeft:position() - entity():pos()):toAngle())
+#            holoAng(2, (RangerRight:position() - entity():pos()):toAngle())
+#            holoAng(3, (RangerFront:position() - entity():pos()):toAngle())
+#            holoAng(4, (RangerBack:position() - entity():pos()):toAngle())
+
+            holoScale(1, RangerLeftHullSize)
+            holoScale(2, RangerRightHullSize)
+            holoScale(3, RangerFrontHullSize)
+            holoScale(4, RangerBackHullSize)
+    
+            holoColor(1, vec(0,0,255))
+            holoColor(2, vec(0,255,0))
+            holoColor(3, vec(255,0,0))    
+            holoColor(4, vec(255,255,255))  
+
+        }
+
+
+}
+
+### Movement: ####---------------------------------------------------------------------------####
+
+if(Movement == 1)
+
+{
+
+if(TURN == 1|HUNT == 1|Follow == 1) { CanRandomlyTurn = 0 B = 0 stoptimer("RandomT1") }
+
+if(TURN == 0 & CanRandomlyTurn == 1 & RandomizedMovement == 1 & HUNT == 0 & Follow == 0) {
+
+if(changed(B)) {
+#print("Timer started!")
+timer("RandomT1", 100)
+}
+
+if(clk("RandomT1")) {
+#print("Timer executed!")
+RandomT1 = round(random(-3,3))
+
+if(RandomT1 == 1) {
+RandomlyTurning = 1
+
+A = 1, D = 0
+
+    timer("RandomT1", 1300)
+  }
+
+elseif(RandomT1 == -1) {
+RandomlyTurning = 1
+
+A = 0, D = 1
+
+    timer("RandomT1", 1300)
+  }
+
+ else {
+RandomlyTurning = 0
+
+    timer("RandomT1", 2500)
+
+    }
+        }
+
+while(B != 5) { B++ }
+
+}
+
+#if(FRONT < 350 & LEFT > 0.1 & RIGHT > 0.6) { TURN = 1, A = 1, D = 0 }
+#
+#elseif(FRONT < 350 & LEFT > 0.6 & RIGHT > 0.1) { TURN = 1, A = 0, D = 1 }
+
+if(FRONT < 350 & RIGHT < 0.4) { TURN = 1, if(Gear == 2) { A = 1, D = 0 } else { A = 0, D = 1 } }
+elseif(FRONT < 350 & LEFT < 0.4) { TURN = 1, if(Gear == 2) { A = 0, D = 1 } else { A = 1, D = 0 } }
+
+elseif(TURN == 0 & (HUNT == 1|Follow == 1) & (sign(HuntY) == 1|sign(FollowHuntY) == 1)) { A = 1, D = 0 }
+elseif(TURN == 0 & (HUNT == 1|Follow == 1) & (sign(HuntY) == -1|sign(FollowHuntY) == -1)) { A = 0, D = 1 }
+
+elseif (LEFT < 0.85 | RIGHT < 0.85) {
+    if (PREDICTION > 0.7) {
+        D = 1 A = 0 TURN = 1 # turn right
+    } elseif(PREDICTION < 0.4 & PREDICTION != 0) {
+        A = 1 D = 0 TURN = 1 # turn left
+    } else { A = 0 D = 0 TURN = 0 }
+}
+ else
+
+{ 
+
+TURN = 0
+
+CanRandomlyTurn = 1
+
+if(RandomlyTurning == 0) {
+
+A = 0, D = 0
+
+    }
+
+}
+
+if(FRONT > 200) { if(Distance < 350 & Distance > 0) { Gear = 2, Throttle = 20 } else { Gear = 1, Throttle = 25 } } else { Gear = 2, Throttle = 25 }
+#if(FRONT > 500) { Gear = 1, Throttle = 100 } else { Gear = 2, Throttle = 100 }
+
+}
+
+}
+

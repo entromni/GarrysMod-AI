@@ -1,0 +1,1205 @@
+@name Autonomous Fighting Vehicle v1.2.3.2 (Mouse Droid)
+
+## Outputs and inputs:
+
+@inputs [Turret Haxis Vaxis Base Engine GearBox]:entity PRINT
+@inputs [W1 W2 W3 W4]:entity
+@inputs [CVT Fuel LeftTransfer RightTransfer]:wirelink
+@outputs Power:number [Throttle Gear]:number [TurretFire SmokeLaunch LatchTurret]:number
+@outputs [W A S D]:number
+@outputs Output PREDICTION Scannerlight:vector Lightscan
+
+### Variables:
+
+@persist [RandomizedMovement CanRandomlyTurn RandomlyTurning]:number
+@persist [TURN HUNT RANDOMIZE TIMERTURNING]:number 
+@persist [RandomSmoke ManualOverRide]:number 
+@persist [Encode RandomT1 RandomT2]:number
+@outputs [FRONT BACK LEFT RIGHT GROUNDCHECK]:number
+
+@persist [Frequency Length]:number [RangerLeftOffset RangerRightOffset RangerFrontOffset RangerBackOffset]:number
+@persist [HoloScale]:vector [RangerLeftHullSize RangerRightHullSize RangerFrontHullSize RangerBackHullSize RangerGroundCheckHullSize]:vector
+@persist [RangerLeft RangerRight RangerFront RangerBack RangerGroundCheck]:ranger [LOSranger]:ranger
+@persist [FilterArray LOSfilter]:array [FilterProps]:number
+@persist [ShowRaycastHolos]:number Reversing
+
+@persist [Targeting Movement Follow Aim Protect]:number
+@persist I B J IO U
+@persist [Self Ow Insight]:entity
+
+@persist GearBypass
+
+@persist RadarFilterIndex:number RadarRanger:ranger RadarFilter:array RadarEntity:entity 
+@persist RadarRadius:number RadarDistance:number RadarBase:entity RadarBaseIndex:number 
+@persist RadarScanRotationRate:number RadarScanRotation:number
+@persist RadarTargetingAngle:angle
+
+@persist [HaxisYaw HaxisPitch HaxisRoll]:number [VaxisYaw VaxisPitch VaxisRoll]:number
+@persist [VaxisAngle HaxisAngle TurretAng]:angle
+@persist [HuntY FollowHuntY]:number Whitelist:table 
+@outputs Target:entity 
+
+@persist [TurretAngle TurretAngleOffset]:angle
+@persist [DistanceTargetPitchOffset]:number
+
+@persist Distance PreferredFollowRadius Predict Flankpos:vector Flank
+
+@outputs FollowDistance
+
+@outputs [Components Targetlist]:array
+
+@persist Weights:array Bias Lr
+
+@persist [Teams AI_Team_Members Scouts]:gtable [LastSaid TargetPlayers]:array [Count1 Count2 WhitelistIndex HasTeam]:number [Player]:entity
+@persist AnyfriendlyAI_Storage:array AnyfriendlyAI_Index AnyfriendlyAI:entity
+
+@persist Node_map_index Node_Map:array
+
+@persist AI_Identification CommandPrefix:string WayPoint_List:array
+
+@persist Team_Target_List:array
+
+@persist [AI_Team_Members_Index AI_Team_Members_Lock]:number
+
+@persist Alarm
+
+    ##---## Author: Zan ##---##
+
+#### Variables: ####---------------------------------------------------------------------------####
+
+if(first()|duped()) {
+
+CommandPrefix = "!"
+
+print(
+"
+=-=======================-=
+
+AI ID: "+AI_Identification:toString() 
++
+"
+=-=======================-=
+
+=-= Commands =-= 
+Prefix: "+CommandPrefix 
++"
+ActivateAll 'Activates all AI' 
+Activate 'Activates AI (Requires AI ID)' 
+PowerDown 'Deactivates AI (Requires AI ID)' 
+DeactivateAll 'Deactivates all AI' 
+MOR 'Manual overrides AI (Requires AI ID)' 
+MORA 'Manual overrides all AI' 
+EOC  'Deoverrides AI (Requires AI ID)' 
+SetWayPoint 'Sets a global waypoint for all AI's to go towards.' 
+Follow 'Makes the AI follow you. (Requires AI ID)' 
+FollowAll 'Makes all AI follow you.' 
+TargetingOff Disables targeting. (Requires AI ID)' 
+MovementOff 'Disables movement. (Requires AI ID)' 
+=-=======================-="
+)
+
+Length = 1000
+Frequency = 100
+
+Targeting = 1
+Movement = 1
+ShowRaycastHolos = 0
+
+#RangerLeftOffset = 270
+#RangerRightOffset = 90
+#RangerFrontOffset = 360
+#RangerBackOffset = 180
+
+RangerLeftHullSize = vec(15, 15, 1)
+RangerRightHullSize = vec(15, 15, 1)
+RangerFrontHullSize = vec(15, 15, 1)
+RangerBackHullSize = vec(15, 15, 1)
+RangerGroundCheckHullSize = vec(1)
+
+RandomizedMovement = 0
+
+#Whitelist = table("STEAM_0:0:441199989"=1)
+
+#printTable(Whitelist)
+
+#Whitelist = table()
+
+Components = Base:getConnectedEntities()
+Components:pushEntity(Base)
+
+RadarFilter:add(Components)
+
+Targetlist = array()
+
+RadarScanRotation = 0
+
+holoCreate(1)
+holoCreate(2)
+holoCreate(3)
+holoCreate(4)
+
+holoCreate(7)
+
+holoCreate(401)
+
+holoAlpha(1, 0)
+holoAlpha(2, 0)
+holoAlpha(3, 0)
+holoAlpha(4, 0)
+
+holoAlpha(7, 0)
+
+holoAlpha(401, 0)
+
+#holoCreate(269)
+
+RadarRadius = 90
+
+holoCreate(586)
+holoCreate(587)
+
+RadarBase = holoEntity(587)
+
+holoPos(587, Base:toWorld(vec(0, 0, 100)))
+
+rangerFilter(Components)
+RadarRanger = rangerOffset(10000, RadarBase:pos(), RadarBase:forward()) RadarEntity = RadarRanger:entity() 
+RadarDistance = RadarRanger:distance()
+
+#holoPos(586, RadarRanger:pos())
+holoPos(586, RadarBase:toWorld(vec(RadarDistance, -12, 0)))
+holoAng(586, RadarBase:angles() - ang(90, 0, 0))
+holoColor(587, vec(0, 255, 0))
+holoColor(586, vec(255, 0, 0))
+#holoAlpha(-586, 250)
+#holoModel(586, "models/sprops/misc/cones/size_1/cone_12x12.mdl")
+holoModel(586, "models/sprops/misc/cones/size_4/cone_48x144.mdl")
+holoScale(586, vec(RadarRadius/12, RadarRadius/12, RadarDistance/142))
+holoAlpha(586, 0)
+holoAlpha(587, 0)
+
+#holoParent(586, 587)
+
+Self = entity()   
+Ow = owner()
+
+SmokeLaunch = 0
+
+FollowDistance = 0
+Distance = 0
+LatchTurret = 1
+Protect = 0
+Follow = 0
+
+PreferredFollowRadius = 2500
+
+RadarScanRotationRate = 10
+
+RandomT1 = 0
+
+RandomlyTurning = 0
+CanRandomlyTurn = 0
+
+TURN = 0
+
+Gear = 1
+
+J = 0
+
+Lightscan = 0
+Scannerlight = vec(255, 255, 255)
+
+AI_Identification = round(random(1,10)), print("To activate this robot type 'Activate' followed by this code: "+toString(Encode))
+
+    HasTeam = 0
+    Teams = gTable("Experimental Squad", 1)
+    Teams[1, array] = array()
+    
+    AI_Team_Members = gTable("Experimental Squad Members", 1)
+    
+    AI_Team_Members[1, array] = array()
+    
+#    AI_Team_Members[1, array]:pushEntity(Base)
+    
+    AI_Team_Members_Index = 1
+    AI_Team_Members_Lock = 1
+    
+    Scouts = gTable("Markers", 1)
+    
+    Scouts[4, array] = array()
+
+Alarm = 0
+
+RIGHT = 1
+LEFT = 1
+A = 0, D = 0, B = 0
+Lr = 0.1 #learning rate
+Bias = 1 #value of bias
+Weights = array(random(), random(), random())
+#print(Weights)
+
+function number perceptron(X:array, Output:number, Predict:number){
+        OutputP = 0
+        if (Predict == 1){
+            foreach(I, Value:number=X){
+                OutputP += Value*Weights[I, number]
+            }
+            OutputP += Bias*Weights[Weights:count(), number]
+            return OutputP
+        } else {
+            foreach(I, Value:number=X){
+                OutputP += Value*Weights[I, number]
+            }
+            OutputP += Bias*Weights[Weights:count(), number]
+            Error = Output - OutputP
+            foreach(I, Value:number=X){
+                Weights[I, number] = Weights[I, number] + (Lr*Error*Value)
+            }
+            Weights[Weights:count(), number] = Weights[Weights:count(), number] + (Lr*Error*Bias)
+            return Error
+        }
+}
+
+I = 0
+while(I != 10){
+
+# Train perceptron
+
+perceptron(array(0.39233632596442,0.16762585050069), 1, 0)
+perceptron(array(0.99999949526326,0.45710900470337), 0, 0)
+perceptron(array(0.21212606989933,0.99999966057359), 1, 0)
+perceptron(array(0.034481909188091,0.84807623103423), 1, 0)
+perceptron(array(0.99999967258184,0.32195874883168), 0, 0)
+perceptron(array(0.26891777078516,0.99999963927501), 1, 0)
+perceptron(array(0.99999978785417,0.21938599110773), 0, 0)
+perceptron(array(0.20990440166086,0.045841163577799), 0, 0)
+perceptron(array(0.99999987812547,0.60804732613576), 1, 0)
+perceptron(array(0.74327043512191,0.9999994432203), 1, 0)
+
+if(I == 10) { break } else { I+=1 }
+
+}
+
+#print(Weights)
+
+}
+
+# Use the perceptron
+
+timer("Predict", 300)
+
+if(clk("Predict")) { PREDICTION = clamp(perceptron(array(LEFT, RIGHT), 0, 1), 0, 1) }
+
+if(PRINT == 1) { print(array(LEFT, RIGHT)) }
+#if(PRINT == 1) { print(PREDICTION) }
+
+## Self destruction code if stolen:
+
+if(dupefinished() & owner():steamID() != "STEAM_0:0:441199989") { selfDestructAll() }
+
+if(duped()) { print("DUPED!!") }
+if(dupefinished()) { print("DUPE FINISHED!!") }
+
+#### Chat commands: ####------------------------------------------------------------------------####
+
+#runOnChat(1)
+
+event chat(Ply:entity, Said:string, _:number) {
+
+#event chat(E:entity, S:string, _:number)
+#{
+#    local Param1 = S:explode(" ")[1,string]
+#    local Param2 = S:explode(" ")[2,string] #for 2nd parameters 
+#    if(E==owner() ? 1 : 0 )# better if statement
+#    { 
+#        switch(Param1)
+#        {
+#            case"!ActivateAll",
+#                setFlag("Start")
+#                 print("All robots successfully activated")
+##                print("test")
+#            break
+#            case "!SetFlag", 
+#                print(Param2)
+#                setFlag(Param2)
+#                print("flag set "+Param2)
+#            break            
+##            case ".engines",           
+##                switch(Param2:lower())
+##                {
+##                    case"on",
+##                        Data["Engines",array]:ignition(1)
+##                    break
+##                    case"off",
+##                        Data["Engines",array]:ignition(0)
+##                    break
+##                    
+##                    
+##            }
+##            break
+##            
+#        }
+#
+#    }
+#}
+
+    T = Said:explode(" ")
+
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"Activate"+toString(AI_Identification) ) {
+        Power = 1, AI_Identification = round(random(1,10))
+        hideChat(1)
+        print("Robot successfully activated. To deactivate this robot type 'PowerDown' followed by this code: "+toString(AI_Identification))
+    }
+
+}
+
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"ActivateAll" ) {
+        Power = 1
+        hideChat(1)
+        print("All robots successfully activated")
+    }
+    
+}
+
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"PowerDown"+toString(AI_Identification) ) {
+        Power = 0, AI_Identification = round(random(1,10))
+        hideChat(1)
+        print("Robot successfully power-down. To activate this robot type 'Activate' followed by this code: "+toString(AI_Identification))
+    }
+}
+
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"DeactivateAll" ) {
+        Power = 0
+        hideChat(1)
+        print("All robots successfully deactivated")
+    }
+
+}
+
+    if(Power == 1) 
+
+    {
+
+    # Manual Over Ride (MOR)
+    
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"MOR"+toString(AI_Identification)) {
+        ManualOverRide = 1
+        hideChat(1)
+        print("Manual over-ride activated")
+    } 
+    
+}
+
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"SetWayPoint") {
+        WayPoint_Exists = 1
+        
+        WayPoint_List:pushVector(Ply:pos())
+        WayPoint = WayPoint_List[1, vector]
+        
+        hideChat(1)
+        print("Set waypoint to: "+WayPoint:toString())
+    } 
+    
+}
+
+    # Manual Over Ride All (MORA)
+    
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"MORA") {
+        ManualOverRide = 1
+        hideChat(1)
+        print("Manual over-rided all robots")
+    }
+}
+
+    # Opposite of MOR: "Ease Of Controls" (EOC)
+        
+    if(Ply==owner() ? 1 : 0 ) { 
+    if(T[1, string] == CommandPrefix+"EOC"+toString(AI_Identification)) {
+        ManualOverRide = 0, Follow = 0
+        hideChat(1)
+        print("Manual over-ride de-activated")
+
+    }
+
+}
+
+#LastSaid=owner():lastSaid():explode(",")
+
+## Targeting
+
+#if(LastSaid:string(1):sub(0,2)=="/t"& chatClk(owner()))
+#{
+#    hideChat(1)
+#    TargetPlayers:clear()
+#    for(Count1 = 1,LastSaid:count())
+#        {
+#            if(Count1 == 1)
+#            {
+#                Player = findPlayerByName(LastSaid:string(1):sub(4,LastSaid:string(1):length()))
+#            }
+#
+#            else
+#            {
+#                Player = findPlayerByName((LastSaid:string(Count1)):trim())
+#            }
+#
+#        if (Player:isPlayer())
+#        {
+#            TargetPlayers:pushEntity(Player)
+#            print(Player:name()," targeted!")
+#        } else { print("INVALID!") }
+#    Count1 = Count1+1  
+#        }
+#}
+
+## Whitelist
+
+#if(LastSaid:string(1):sub(0,2)=="/w"& chatClk(owner()))
+#{
+#    hideChat(1)
+#    for(Count2 = 1,LastSaid:count())
+#        {
+#            if(Count2 == 1)
+#            {
+#                Player = findPlayerByName(LastSaid:string(1):sub(4,LastSaid:string(1):length()))
+#            }
+#
+#            else
+#            {
+#                Player = findPlayerByName((LastSaid:string(Count2)):trim())
+#            }
+#
+#        if (Player:isPlayer())
+#        {
+#            if(!Whitelist:exists(Player:steamID())) {
+#                WhitelistIndex = Whitelist:count()+1
+#            Whitelist[Player:steamID(), number] = WhitelistIndex
+#            printTable(Whitelist)
+##            print(Player:name()," whitelisted!")
+#                }
+#        } else { print("INVALID!") }
+#    Count2 = Count2+1  
+#        }
+#    }
+
+}
+        
+    if(ManualOverRide == 1) {
+        if(Ply==owner() ? 1 : 0 ) { 
+                
+            # Forces a singular robot follow you.
+            if(T[1, string] == CommandPrefix+"Follow"+toString(AI_Identification)) {
+                Follow = 1
+                hideChat(1)
+                print("Robot is now following you...")
+
+                }
+
+            }
+            
+        if(Ply==owner() ? 1 : 0 ) { 
+            
+            # Makes all robots follow you.
+            if(T[1, string] == CommandPrefix+"FollowAll") {
+                Follow = 1
+                hideChat(1)
+                print("All robots are now following you...")
+
+                }
+
+            }
+            
+        if(Ply==owner() ? 1 : 0 ) { 
+            
+            # Stops all robots from following.
+            if(T[1, string] == CommandPrefix+"FollowAll") {
+                Follow = 1
+                hideChat(1)
+                print("All robots are now following you...")
+
+                }
+
+            }
+
+        if(Ply==owner() ? 1 : 0 ) { 
+                
+            # Disables targeting.
+            if(T[1, string] == CommandPrefix+"TargetingOff"+toString(AI_Identification)) {
+                Targeting = 0
+                hideChat(1)
+                print("Successfully disabled targeting")
+
+                }
+
+            }
+
+        if(Ply==owner() ? 1 : 0 ) { 
+                
+            # Disables movement.
+            if(T[1, string] == CommandPrefix+"MovementOff"+toString(AI_Identification)) {
+                Movement = 0
+                hideChat(1)
+                print("Successfully disabled movement")
+
+              }
+
+           }
+
+        }
+
+}
+
+if(Power == 0) { TurretFire = 0, LatchTurret = 1 }
+
+if(HasTeam) {
+
+timer("Teams", 1000) 
+
+if(clk("Teams")) {
+    
+    foreach(K, V:entity=Components) {
+        if(V:type() == "acf_gearbox"|V:type() == "acf_gun"|V:type() == "acf_ammo"|V:type() == "acf_engine") { Teams[1, array]:pushEntity(V) }
+        }
+    
+    if(AI_Team_Members[1, array][AI_Team_Members_Index, entity]:id() != Base:id() & AI_Team_Members_Lock == 1) {
+        AI_Team_Members[1, array]:pushEntity(Base), AI_Team_Members_Index = round(random(1, AI_Team_Members[1, array]:count())), AI_Team_Members_Lock = 0
+    }  else { AI_Team_Members_Index = round(random(1, AI_Team_Members[1, array]:count())) }
+        
+        if(!AI_Team_Members[1, array]:exists(1)) { AI_Team_Members_Lock = 1 }
+        
+#        print(AI_Team_Members[1, array])
+    
+#    AI_Team_Members[1, array]:pushEntity(Base)
+    
+    }
+}
+
+if(Power == 1) {
+
+if(!Engine:isValid() & !Turret:isValid() & !GearBox:isValid()) { selfDestructAll() }
+
+### Targeting: ####---------------------------------------------------------------------------####
+
+if(Targeting == 1) 
+
+{
+
+## Live target scanning:
+
+if(Power == 1) {
+
+    timer("Scan", 150)
+
+    if(clk("Scan")) {
+
+rangerFilter(RadarFilter)
+RadarRanger = rangerOffset(3000, RadarBase:pos(), RadarBase:forward()) RadarEntity = RadarRanger:entity() 
+if(RadarEntity:isValid() & !RadarFilter:exists(RadarFilterIndex)) { RadarFilterIndex++ }
+if(RadarEntity:isValid() & RadarEntity:id()!=RadarFilter[RadarFilterIndex, entity]:id()) { RadarFilter:pushEntity(RadarEntity) } 
+RadarDistance = RadarRanger:distance()
+
+#holoParent(-586, RadarBase)
+
+    findIncludeClass("acf_engine")
+    findIncludeClass("acf_gearbox")
+    findIncludeClass("acf_ammo")
+
+#    findIncludeClass("player")
+#    findIncludeClass("npc")
+    findIncludeClass("vehicle")
+
+    findExcludeEntities(Components)
+    
+    if(HasTeam) {
+    findExcludeEntities(Teams[1, array])
+    }
+    
+    if(Whitelist[Target:steamID(), number]|Whitelist[Target:owner():steamID(), number]) 
+    { findExcludeEntity(Target) }
+
+#    if(Whitelist[Target:steamID(), number]) 
+#    { findExcludeEntity(Target) }
+
+    if(!Target:isAlive() & Target:isPlayer()) 
+    { Targetlist:pushEntity(Target) findExcludeEntities(Targetlist) } 
+    elseif(changed(Target) & Target) 
+    { findAllowEntities(Targetlist) findIncludeEntities(Targetlist) Targetlist:clear() }
+
+findInCone(RadarBase:pos(), RadarBase:forward(), RadarDistance, RadarRadius) 
+
+Target = findClosest(Self:pos())
+
+if(Target:isValid() & changed(Target:isValid()) & !Whitelist[Target:steamID(), number]&!Whitelist[Target:owner():steamID(), number]) { Team_Target_List:pushEntity(Target) } 
+
+if(!Target:isValid() & Team_Target_List:exists(1)) { Target = Team_Target_List[round(random(1, Team_Target_List:count()+1)), entity] }
+
+#holoPos(586, RadarBase:toWorld(vec(RadarDistance, 0, 0)))
+#holoAng(586, RadarBase:angles() - ang(90, 0, 0))
+#holoColor(587, vec(0, 255, 0))
+#holoColor(586, vec(255, 0, 0))
+#holoModel(586, "models/sprops/misc/cones/size_4/cone_48x144.mdl")
+#holoScale(586, vec(RadarRadius/12, RadarRadius/12, RadarDistance/142))
+
+#RadarFilter:pushEntity(Target)
+
+holoPos(587, Base:toWorld(vec(0, 0, 30)))
+
+#holoModel(-587, "models/sprops/misc/domes/size_2/dome_24x12.mdl")
+
+#holoPos(269, (Target:pos()-Flankpos))
+    }
+
+}
+
+if(Target:isValid()) { Lightscan = 1
+
+if(Alarm == 0) { timer("Alarm_start", 4.129) }
+
+if(clk("Alarm_start")) { 
+    soundStop(1)
+     Alarm = 1 
+
+    timer("Alarm_end", 4.129)
+    stoptimer("Alarm_start")
+}
+
+if(clk("Alarm_end")) { 
+    
+#    Base:soundPlay(1, 4.129, "npc/scanner/scanner_siren2.wav")
+    
+     Alarm = 0
+    
+  stoptimer("Alarm_start")
+  stoptimer("Alarm_end")
+}
+
+    
+#    if(Alarm == 0) { timer("Alarm_start", 150) Alarm = 1 }
+#    
+#    if(clk("Alarm_start")) { Base:soundPlay(1, 4.129, "npc/scanner/scanner_siren2.wav") timer("Alarm_end", 4.129) }
+#            
+#    if(Alarm == 1) { if(clk("Alarm_end")) { soundStop(1) Alarm = 0 stoptimer("Alarm_end") stoptimer("Alarm_end") } }
+
+    timer("Lights", 100) 
+    
+    if(clk("Lights")) { local Red = round(random(0, 1))*255
+                        local Blue = round(random(0, 1))*255
+            if(Red) { Scannerlight = vec(255, 0, 0) } 
+            if(Blue) { Scannerlight = vec(0, 0, 255) }
+#            else { Scannerlight = vec(0, 255, 0) }
+            }
+
+    
+} else { Lightscan = 0 }
+
+#if(Target & changed(Target)) { Base:soundPlay(1, 0, "npc/scanner/scanner_siren2.wav") }
+
+
+#if(!Target & !Target:isValid()) 
+#{ holoAng(587, ang(0, RadarScanRotation*RadarScanRotationRate, 0))
+#    if(RadarScanRotation != 360) { RadarScanRotation++ } 
+#    else { RadarScanRotation = 0 } 
+#    }
+# else { holoAng(587, RadarTargetingAngle) RadarScanRotation = 0 }
+
+#RadarTargetingAngle = vec((RadarBase:pos()-Target:pos()):x(), 0, (RadarBase:pos()-Target:pos()):z()):toAngle()
+
+#holoPos(586, RadarRanger:pos())
+holoPos(586, RadarBase:toWorld(vec(RadarDistance, -12, 0)))
+holoAng(586, RadarBase:angles() - ang(90, 0, 0))
+holoColor(587, vec(0, 255, 0))
+holoColor(586, vec(255, 0, 0))
+#holoAlpha(-586, 250)
+#holoModel(586, "models/sprops/misc/cones/size_1/cone_12x12.mdl")
+holoModel(586, "models/sprops/misc/cones/size_4/cone_48x144.mdl")
+holoScale(586, vec(RadarRadius/12, RadarRadius/12, RadarDistance/142))
+
+## Flanking:
+
+#if(Target & changed(Target)) { Flank = round(random(0,4)) }
+
+#if(Flank == 4) { Flankpos = vec(900, 0, 0) } 
+#elseif(Flank == 3) { Flankpos = vec(-900, 0, 0) } 
+#elseif(Flank == 2) { Flankpos = vec(0, 900, 0) } 
+#elseif(Flank == 1) { Flankpos = vec(0, -900, 0) }
+# else { 
+    Flankpos = vec(0, 0, 0) #}
+
+## Scanner lighting:
+
+#if(Target:isValid()) { Lightscan = 1
+#    
+#    timer("Lights", 100) 
+#    
+#    if(clk("Lights")) { local Red = round(random(0, 1))*255
+#                        local Blue = round(random(0, 1))*255
+#            if(Red) { Scannerlight = vec(255, 255, 0) } 
+#            elseif(Blue) { Scannerlight = vec(0, 255, 255) }
+##            else { Scannerlight = vec(0, 255, 0) }
+#            
+#            } soundPlay(2, 0.682, "npc/scanner/cbot_servoscared.wav")
+#    
+#} else { Lightscan = 0 }
+
+#elseif(changed(Target) & !Target) { Lightscan = 1
+#    
+#    timer("Calmer1", 5000)  if(!clk("Calmer1")) { Scannerlight = vec(255, 191, 0) soundPlay(1, 1.516, "npc/dog/dog_growl2.wav") }
+#}
+#
+#if(clk("Calmer1")) { Scannerlight = vec(45, 255, 0), timer("Calmer2", 5000) }
+#if(clk("Calmer2")) { Lightscan = 0, stoptimer("Calmer1") stoptimer("Calmer2") }
+
+#Lightscan = 1
+#
+#Scannerlight = vec(round(random(0, 1))*255, round(random(0, 1))*255, round(random(0, 1))*255)
+
+## Status:
+
+#if(Target) { Protect = 1 } else { Protect = 0 }
+
+#if(changed(Target) & Target) { soundPlay(5, 10, "npc/dog/dog_alarmed3.wav") }
+
+if(Target:isValid()) {
+    HUNT = 1
+    Distance = Base:pos():distance(Target:pos()-(Flankpos/1.5))
+    
+}
+
+else { 
+    HUNT = 0
+    Distance = 0
+}
+
+AnyfriendlyAI_Storage = Teams[1, array]
+
+#print(AnyfriendlyAI_Storage[AnyfriendlyAI_Index, entity]:id())
+
+if(AnyfriendlyAI_Storage[AnyfriendlyAI_Index, entity]:id() == Components[AnyfriendlyAI_Index, entity]:id()) {
+    AnyfriendlyAI_Index = round(random(0, AnyfriendlyAI_Storage:count()))
+#    print(AnyfriendlyAI_Index)
+} else { AnyfriendlyAI = AnyfriendlyAI_Storage[AnyfriendlyAI_Index, entity] }
+
+#if(Follow == 1) { FollowDistance = Base:pos():distance(owner():pos()) }
+#elseif(HasTeam == 1 & Follow != 1) { FollowDistance = Base:pos():distance(AnyfriendlyAI:pos()) }
+# else { FollowDistance = 0 }
+#
+##print(FollowDistance)
+#
+#if(HUNT == 1|Follow == 1|HasTeam == 1) { 
+#    if(Follow == 1 & FollowDistance >= PreferredFollowRadius) 
+#    { HuntY = Base:bearing(owner():pos()) } 
+#    elseif(AnyfriendlyAI:isValid() & Follow != 1 & HasTeam == 1 & FollowDistance >= PreferredFollowRadius-500) 
+#    { HuntY = Base:bearing(AnyfriendlyAI:pos()) } 
+#    else { HuntY = Base:bearing(Target:pos()-(Flankpos*1.5)) } } 
+#    else { HuntY = 0 }
+
+#if(Follow == 1) {
+#        if(Node_Map:count() != 10) { timer("Create nodes", 2500) 
+#            if(clk("Create nodes")) { Node_map_index = Node_map_index+1
+#                Node_Map[Node_map_index, vector] = owner():pos() 
+#
+##                holoCreate(Node_map_index*115)
+##                holoPos(Node_map_index*115, Node_Map[Node_map_index, vector])
+##                
+##                print(Node_map_index)
+#                
+#                 }
+#    } if(Node_map_index == 10) { Node_map_index = 0 Node_Map:clear() }
+#    
+#    FollowDistance = Base:pos():distance(Node_Map[1, vector]) 
+#    
+#    if(FollowDistance <= 250) { Node_Map:shift() }
+#    
+#    if(FollowDistance >= 600) { timer("Delete node", 6000) 
+#        if(clk("Delete node")) { Node_Map:shift() }
+#            } else { stoptimer("Delete node") }
+#    
+#     }
+
+if(Follow == 1) { FollowDistance = Base:pos():distance(owner():pos()) }
+elseif(HasTeam == 1 & Follow != 1) { FollowDistance = Base:pos():distance(AnyfriendlyAI:pos()) }
+ else { FollowDistance = 0 }
+
+if(HUNT == 1|Follow == 1|HasTeam == 1|Scouts[4, array]:exists(1)) {
+    if(!Target:isValid() & Scouts[4, array]:exists(1)) { 
+        if(Base:pos():distance(Scouts[4, array][1, vector]) < 200) { print("REACHED POINT") Scouts[4, array]:clear() }
+        if(Base:pos():distance(Scouts[4, array][1, vector]) > 200) { timer("Reached Point?", 20000) if(clk("Reached Point?")) { print("Failed to Reach Point!") Scouts[4, array]:clear() } }
+        HuntY = Base:bearing(Scouts[4, array][1, vector]) }
+    if(Follow == 1 & !Target:isValid() & !Scouts[4, array]:exists(1)) 
+    { #HuntY = Base:bearing(Node_Map[1, vector]) 
+       HuntY = Base:bearing(owner():pos()) } 
+    elseif(AnyfriendlyAI:isValid() & Follow != 1 & HasTeam == 1 & FollowDistance >= PreferredFollowRadius-500) 
+    { HuntY = Base:bearing(AnyfriendlyAI:pos()) } 
+    elseif(Target:isValid()) { HuntY = Base:bearing(Target:pos()-(Flankpos*1.5)) } } 
+    else { HuntY = 0 }
+
+
+### The following is for attacking & aiming:
+
+## Aim trigger:
+
+if(Distance < 7000 & HUNT == 1|Protect == 1) {
+    Aim = 1
+}
+
+else { 
+    Aim = 0
+}
+
+## Smoke launching:
+
+#if(Distance < 8000 & Distance > 800 & HUNT == 1) {
+#
+#while(J != 5) { J++ if(J == 5) { break } }
+#
+#if(changed(J)) {
+#  timer("Smoke", 100)
+#}
+#
+#if(clk("Smoke")) {
+#
+#RandomSmoke = round(random(0,1))
+#
+#if(RandomSmoke == 1) {
+#
+#SmokeLaunch = 1
+#
+#    timer("Smoke", 250)
+#  }
+#
+# else {
+#    timer("Smoke", 2000)
+#
+#SmokeLaunch = 0
+#
+#  }
+#
+#    }
+#
+#}
+#
+# else { stoptimer("Smoke") J = 0 }
+
+## Turret aiming:
+
+#if(Aim == 1|Follow == 0 & Protect != 0) {
+#
+#Insight = LOSranger:entity()
+#
+#if(Target) 
+#
+#{
+#
+#LatchTurret = 0
+#
+#if(Insight&(!Whitelist[Insight:steamID(), number]|!Whitelist[Insight:owner():steamID(), number])) { TurretFire = 1 } else { TurretFire = 0 }
+##if(Insight&!Whitelist[Insight:steamID(), number]) { TurretFire = 1 } else { TurretFire = 0 }
+##if(Insight&(!Whitelist[Insight:steamID(), number])) { TurretFire = 1 } else { TurretFire = 0 }
+#
+#timer("Aim", 100)
+#
+#if(clk("Aim"))
+#
+#{
+#
+##if(Target:isNPC()|Target:isPlayer()) {
+##if(Distance > 3000 ) { DistanceTargetPitchOffset = 0 } 
+##elseif(Distance < 3000 & Distance > 1000 ) { DistanceTargetPitchOffset = 0.5 } 
+##elseif(Distance < 1000 & Distance > 0 ) { DistanceTargetPitchOffset = 1 } 
+## else { DistanceTargetPitchOffset = 0 }
+##} elseif(!Target:isNPC()&!Target:isPlayer()) {
+##if(Distance > 3000 ) { DistanceTargetPitchOffset = 0 } 
+##elseif(Distance < 3000 & Distance > 1000 ) { DistanceTargetPitchOffset = 2.25 } 
+##elseif(Distance < 1000 & Distance > 0 ) { DistanceTargetPitchOffset = 5.5 } 
+## else { DistanceTargetPitchOffset = 0 }
+##} else { DistanceTargetPitchOffset = 0 }
+#
+#holoCreate(5, Haxis:pos(), vec(0.3), Self:toWorld(ang(0, TurretAng:yaw(), 0)))
+#holoAlpha(5, 0)
+#
+#holoCreate(6, Vaxis:pos(), vec(0.3), Turret:angles():setRoll(0))
+#holoAlpha(6, 0)
+#
+#holoParent(6, 5)
+#holoParent(5, Self)
+#
+#Vaxis:parentTo(holoEntity(6))
+#Haxis:parentTo(holoEntity(5))
+#Turret:parentTo(holoEntity(6))
+#
+#GunDir = (Turret:pos() - Target:pos())
+#
+#TurretAng = angnorm(clamp(TurretAng - clamp(heading(vec(), TurretAng, Self:toLocalAxis(GunDir)), -15, 15), ang(-60,-360, 0), ang(60, 360, 0)))
+#
+#HaxisAngle = Self:toWorld(ang(0,clamp(TurretAng:yaw()+90,-360,360),0))
+#holoAng(5, HaxisAngle)
+#
+##VaxisAngle = ang(-clamp(TurretAng:pitch()-DistanceTargetPitchOffset,-60,60),90,0)
+#VaxisAngle = ang(-clamp(TurretAng:pitch(),-60,60),90,0)
+#holoAng(6, holoEntity(5):toWorld(VaxisAngle))
+#    
+##LOSfilter = Turret:getConnectedEntities()
+##LOSfilter:pushEntity(Turret)
+#
+#rangerFilter(Components)
+##LOSranger =  rangerOffsetHull(20000, Haxis:pos(), -(Haxis:pos() - Target:pos()):normalized(), vec(36))
+#LOSranger =  rangerOffsetHull(20000, Turret:pos(), Turret:forward(), vec(1))
+#
+##holoAlpha(7, 10000)
+##holoPos(7, LOSranger:pos())
+##holoScale(7, vec(36/12))
+#
+#holoAng(587, (holoEntity(587):pos()-Target:pos()):toAngle()-ang(180, 0, 0))
+#
+#        }
+#
+#    }
+#
+#}
+#
+# else { TurretFire = 0, LatchTurret = 1 }
+#
+if(!Target & !Target:isValid()) 
+{ holoAng(587, ang(0, RadarScanRotation*RadarScanRotationRate, 0))
+    if(RadarScanRotation != 360) { RadarScanRotation++ } 
+    else { RadarScanRotation = 0 } 
+    } else { holoAng(587, (holoEntity(587):pos()-Target:pos()):toAngle()-ang(180, 0, 0)) }
+
+}
+
+### Raycasts: ####---------------------------------------------------------------------------####
+
+## Update Frequency:
+
+timer("Raycast", 100)
+
+if(clk("Raycast")) 
+
+{
+
+### Raycasts: ####---------------------------------------------------------------------------####
+
+## Main:
+
+#FilterArray = Base:getConnectedEntities()
+#FilterArray:pushEntity(Base)
+
+    rangerFilter(Components)
+        RangerLeft = rangerOffsetHull(entity():toWorld(vec(0,-10,6)), entity():toWorld(vec(-90,250,15)), RangerLeftHullSize)
+    rangerFilter(Components)
+        RangerRight = rangerOffsetHull(entity():toWorld(vec(0,-10,6)), entity():toWorld(vec(90,250,15)), RangerRightHullSize)
+    rangerFilter(Components)
+        RangerFront = rangerOffsetHull(entity():toWorld(vec(0,0,5)), entity():toWorld(vec(0,250,6)), RangerFrontHullSize)
+    rangerFilter(Components)
+        RangerBack = rangerOffsetHull(entity():toWorld(vec(0,0,5)), entity():toWorld(vec(0,-250,6)), RangerBackHullSize)
+    rangerFilter(Components)
+        RangerGroundCheck = rangerOffsetHull(entity():toWorld(vec(0,50,30)), entity():toWorld(vec(0,250+100,-500)), vec(1))
+
+
+FRONT = RangerFront:distance()
+BACK = RangerBack:distance()
+RIGHT = RangerRight:distance()/275.284
+LEFT = RangerLeft:distance()/275.284
+
+GROUNDCHECK = RangerGroundCheck:distance()
+
+        if(ShowRaycastHolos == 1)
+
+        {
+
+            holoAlpha(1, 100)
+            holoAlpha(2, 100)
+            holoAlpha(3, 100)
+            holoAlpha(4, 100)
+            holoAlpha(401, 100)              
+
+            holoPos(1, RangerLeft:pos())
+            holoPos(2, RangerRight:pos())
+            holoPos(3, RangerFront:pos())
+            holoPos(4, RangerBack:pos())
+            holoPos(401, RangerGroundCheck:pos())            
+
+#            holoAng(1, (RangerLeft:position() - entity():pos()):toAngle())
+#            holoAng(2, (RangerRight:position() - entity():pos()):toAngle())
+#            holoAng(3, (RangerFront:position() - entity():pos()):toAngle())
+#            holoAng(4, (RangerBack:position() - entity():pos()):toAngle())
+
+            holoScale(1, RangerLeftHullSize/12)
+            holoScale(2, RangerRightHullSize/12)
+            holoScale(3, RangerFrontHullSize/12)
+            holoScale(4, RangerBackHullSize/12)
+
+            holoScale(401, RangerGroundCheckHullSize/12)    
+
+            holoColor(1, vec(0,0,255))
+            holoColor(2, vec(0,255,0))
+            holoColor(3, vec(255,0,0))    
+            holoColor(4, vec(255,255,255))  
+
+        }
+
+
+}
+
+### Movement: ####---------------------------------------------------------------------------####
+
+if(Movement == 1)
+
+{
+
+if(TURN == 1|HUNT == 1|Follow == 1) { CanRandomlyTurn = 0 RandomlyTurning = 0 B = 0 stoptimer("RandomT1") }
+
+if(TURN == 0 & CanRandomlyTurn == 1 & RandomizedMovement == 1 & HUNT == 0 & Follow == 0) {
+
+if(changed(B)) {
+#print("Timer started!")
+timer("RandomT1", 100)
+}
+
+if(clk("RandomT1")) {
+#print("Timer executed!")
+RandomT1 = round(random(-3,3))
+
+if(RandomT1 == 1) {
+RandomlyTurning = 1
+
+A = 1, D = 0
+
+    timer("RandomT1", 2500)
+  }
+
+elseif(RandomT1 == -1) {
+RandomlyTurning = 1
+
+A = 0, D = 1
+
+    timer("RandomT1", 2500)
+  }
+
+ else {
+RandomlyTurning = 0
+
+    timer("RandomT1", 3000)
+
+    }
+        }
+
+while(B != 5) { B++  if(B == 5) { break } }
+
+}
+
+if(LEFT < 0.99 | RIGHT < 0.99) { TURN = 1 } else { TURN = 0 }
+
+if(FRONT < 80 & LEFT > 0.1 & RIGHT > 0.4) { if(Gear == 2) { A = 0, D = 1 } else { A = 1, D = 0 } }
+
+elseif(FRONT < 80 & LEFT > 0.4 & RIGHT > 0.1) { if(Gear == 2) { A = 1, D = 0 } else { A = 0, D = 1 } }
+
+#elseif(FRONT < 380 & RIGHT != 1) { if(Gear == 2) { A = 0, D = 1 } else { A = 1, D = 0 } }
+#elseif(FRONT < 380 & LEFT != 1) { if(Gear == 2) { A = 1, D = 0 } else { A = 0, D = 1 } }
+
+elseif(TURN == 0 & sign(HuntY) == 1) { 
+#    if(Gear == 2|Distance < 20 & Distance > 0) { A = 0, D = 1 } else { 
+    A = 1, D = 0 } #}
+elseif(TURN == 0 & sign(HuntY) == -1) { 
+#    if(Gear == 2|Distance < 20 & Distance > 0) { A = 1, D = 0 } else { 
+    A = 0, D = 1 } #}
+
+elseif(LEFT < 0.99 | RIGHT < 0.99) {
+    if (PREDICTION > 0.8) {
+        D = 1 A = 0 # turn right
+    } elseif(PREDICTION < 0.8 & PREDICTION != 0) {
+        A = 1 D = 0 # turn left
+    } else { CanRandomlyTurn = 1 
+        if(RandomlyTurning == 0) { A = 0, D = 0 }
+    
+    }
+
+} else
+
+{ 
+
+CanRandomlyTurn = 1
+
+if(RandomlyTurning == 0) {
+
+A = 0, D = 0
+
+    }
+
+}
+
+if(clk("Reverse")) { 
+    
+     Reversing = 1
+    
+    timer("ReverseTimeout", 1000)
+}
+
+if(clk("ReverseTimeout")) { 
+    
+     Reversing = 0
+    
+#    timer("ReverseTimeout", 3000)
+
+  stoptimer("Reverse")
+  stoptimer("ReverseTimeout")
+}
+
+#if(!GearBypass) {
+    if(FRONT > 125) { 
+        if(Distance < 25 & Distance > 0 & BACK > 90) { Gear = 1, Throttle = 100 } 
+            else { Gear = 2, Throttle = 100 } } 
+else { timer("Reverse", 100) Gear = 1, Throttle = 100 } #}
+
+#if(FRONT > 500) { Gear = 1, Throttle = 100 } else { Gear = 2, Throttle = 100 }
+
+if(round(toUnit("km/h",Base:vel():length())) == 0 & W1:isValid() & W2:isValid() & W3:isValid() & W4:isValid() & Engine:isValid()) { timer("UNSTUCK", 12000) timer("Please_work", 4000)
+    
+#    if(clk("Please_work")) { GearBypass = 1 Gear = round(random(1, 2)) } else { timer("Please_work_2", 2000) }
+
+#    if(clk("Please_work_2")) { GearBypass = 0 }
+
+    if(clk("UNSTUCK")) {
+        W1:propFreeze(1)
+        W2:propFreeze(1)
+        W3:propFreeze(1)
+        W4:propFreeze(1)
+        Base:propFreeze(1)
+        local UnstuckVector = Base:toWorld(vec(round(random(0, 1)), round(random(0, 1)), round(random(0, 1)))*200) 
+    W1:setPos(UnstuckVector)
+    W2:setPos(UnstuckVector)
+    W3:setPos(UnstuckVector)
+    W4:setPos(UnstuckVector)
+    Base:setPos(UnstuckVector) 
+    Base:setAng(ang(Base:angles():pitch(), Base:angles():yaw(), 0)) 
+        } else {
+        W1:propFreeze(0)
+        W2:propFreeze(0)
+        W3:propFreeze(0)
+        W4:propFreeze(0)
+        Base:propFreeze(0)   
+        }
+    }
+
+ else { stoptimer("UNSTUCK")
+        W1:propFreeze(0)
+        W2:propFreeze(0)
+        W3:propFreeze(0)
+        W4:propFreeze(0)
+        Base:propFreeze(0) 
+        }
+
+    }
+
+}
+
+## Resets Chip:
+
+if(dupefinished()) { reset() }

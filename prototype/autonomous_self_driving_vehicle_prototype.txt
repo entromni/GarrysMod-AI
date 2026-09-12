@@ -1,0 +1,82 @@
+@name autonomous self driving vehicle prototype
+@inputs LEFT FRONT BACK RIGHT
+@outputs TURNr TURNl Forwardrw Forwardlw Backwardrw Backwardlw
+
+
+## The following is for turning:
+
+if(FRONT <= 75 & RIGHT <= 75) {
+    TURNr = 1, TURNl = -1
+}
+
+else { 
+    TURNr = 0, TURNl = 0
+}
+
+if(FRONT <= 75 & LEFT <= 75) {
+    TURNl = 1, TURNr = -1
+}
+
+else { 
+    TURNl = 0, TURNr = 0
+}
+
+## The following is also for turning:
+
+if(RIGHT <= 75 & LEFT >= 75) {
+    TURNr = 1, TURNl = -1
+}
+
+elseif(LEFT <= 75 & RIGHT >= 75) {
+    TURNl = 1, TURNr = -1
+}
+
+else { 
+    TURNr = 0, TURNl = 0
+}
+
+## The following rotates the build if certain values are met:
+
+if(FRONT <= 80 & LEFT >= 75 & RIGHT >= 75) {
+    TURNr = -1, TURNl = 1
+}
+
+## For turning movement:
+
+if(TURNr == -1 & TURNl == 1) {
+    Forwardrw = -1, Forwardlw = 1, Backwardrw = -1, Backwardlw = 1
+}
+
+if(TURNl == -1 & TURNr == 1) {
+    Forwardrw = 1, Forwardlw = -1, Backwardrw = 1, Backwardlw = -1
+}
+
+## The following is for back & forward movement:
+
+# Front:
+
+if(FRONT <= 75) {
+    Forwardrw = -1, Forwardlw = -1
+}
+
+elseif(FRONT >= 80) {
+    Forwardrw = 1, Forwardlw = 1
+}
+
+else {
+    Forwardrw = 0, Forwardlw = 0
+}
+
+# Back:
+
+if(FRONT <= 80 & TURNr == -1 & TURNl == 1) {
+    Backwardrw = -1, Backwardlw = 1
+}
+
+elseif(BACK <= 75) {
+    Backwardrw = 1, Backwardlw = 1
+}
+
+else {
+    Backwardrw = 0, Backwardlw = 0
+}

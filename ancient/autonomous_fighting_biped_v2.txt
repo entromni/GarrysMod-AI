@@ -1,0 +1,835 @@
+@name Autonomous Fighting Biped v2
+
+## Outputs and inputs:
+
+@inputs [Turret Haxis Vaxis Base Head Torso Waist]:entity 
+@inputs [RightArm RightLeg1 RightLeg2 RightLeg3 RightLeg4 RightFoot]:entity 
+@inputs [LeftArm LeftLeg1 LeftLeg2 LeftLeg3 LeftLeg4 LeftFoot]:entity 
+@inputs [CVT Fuel LeftTransfer RightTransfer]:wirelink
+@outputs Power:number [Throttle Gear]:number [TurretFire SmokeLaunch LatchTurret]:number
+@outputs [W A S D]:number
+@model models/sprops/cuboids/height12/size_1/cube_12x12x12.mdl
+@trigger none
+
+### Variables:
+
+@persist [GTime GSpan] [DT CT] [LMove RMove LOsc ROsc] [LPos RPos LHold RHold LGoto RGoto MPos MVel]:vector [MAng]:angle [MHeight MWidth MGround MStep MOsc] MSpeed
+@persist [LENGTH_0 LENGTH_1 LENGTH_2]
+@persist HeadYawOffset HeadYawOffsetLockA HeadYawOffsetLock
+
+@persist [RandomizedMovement CanRandomlyTurn RandomlyTurning]:number
+@persist [TURN HUNT RANDOMIZE TIMERTURNING]:number 
+@persist [RandomSmoke ManualOverRide]:number 
+@persist [Encode RandomT1 RandomT2]:number
+@outputs [FRONT BACK LEFT RIGHT]:number
+
+@persist [Frequency Length]:number [RangerLeftOffset RangerRightOffset RangerFrontOffset RangerBackOffset]:number
+@persist [HoloScale]:vector [RangerLeftHullSize RangerRightHullSize RangerFrontHullSize RangerBackHullSize]:vector
+@persist [RangerLeft RangerRight RangerFront RangerBack]:ranger [LOSranger]:ranger
+@persist [FilterArray LOSfilter]:array [FilterProps]:number
+@persist [ShowRaycastHolos]:number
+
+@persist [Targeting Movement Follow Aim Protect]:number
+@persist I B
+@persist [Self Ow Insight]:entity
+
+@persist [HaxisYaw HaxisPitch HaxisRoll]:number [VaxisYaw VaxisPitch VaxisRoll]:number
+@persist [VaxisAngle HaxisAngle TurretAng]:angle
+@persist [HuntY FollowHuntY]:number Whitelist:table Target:entity
+
+@persist [TurretAngle TurretAngleOffset]:angle
+@persist [DistanceTargetPitchOffset]:number
+
+@persist Distance
+
+@persist Components:array
+
+    ##---## Author: Zan ##---##
+
+## Functionality based on startup:
+
+if(first())
+
+{
+
+Self = entity()   
+Ow = owner()
+
+Length = 600
+Frequency = 100
+
+Targeting = 1
+Movement = 1
+ShowRaycastHolos = 0
+
+RangerLeftOffset = 270
+RangerRightOffset = 90
+RangerFrontOffset = 360
+RangerBackOffset = 180
+
+RangerLeftHullSize = vec(1)
+RangerRightHullSize = vec(1)
+RangerFrontHullSize = vec(1)
+RangerBackHullSize = vec(1)
+
+RandomizedMovement = 1
+
+Whitelist = table("STEAM_0:0:441199989"=1)
+
+Components = Base:getConnectedEntities()
+
+FRONT = 600
+BACK = 600
+RIGHT = 600
+LEFT = 600
+
+MSpeed = 0
+
+Distance = 0
+LatchTurret = 1
+Protect = 0
+Follow = 0
+
+RandomT1 = 0
+
+RandomlyTurning = 1
+
+TURN = 0
+
+A = 0, D = 0
+
+Gear = 1
+
+HeadYawOffset = 0
+HeadYawOffsetLock = 0
+HeadYawOffsetLockA = 0
+
+Display = Encode = round(random(1,10)), print("To activate this robot type 'Activate' followed by this code: "+toString(Encode))
+
+    MHeight = 150
+    MWidth  = 70
+    MGround = 8
+    MStep   = 0.5
+    MOsc    = 0.5
+    
+ MAng = ang(0,90,0)
+
+    MPos = LPos = RPos = LHold = RHold = RGoto = LGoto = entity():pos() + vec(0, 0, 0)
+
+LPos = MPos - vec(MWidth,0,MHeight)
+RPos = MPos - vec(-MWidth,0,MHeight)
+
+    #-- joints
+    LENGTH_0 = 35
+    LENGTH_1 = 35
+    LENGTH_2 = 35
+
+holoCreate(8)
+holoCreate(9)
+holoCreate(10)
+
+holoPos(8, MPos)
+holoPos(9, LPos)
+holoPos(10, RPos)
+
+holoAlpha(8, 0)
+holoAlpha(9, 0)
+holoAlpha(10, 0)
+
+holoAng(8, MAng)
+
+holoColor(8, vec(255,255,0))
+holoColor(9, vec(0,255,255))
+holoColor(10, vec(255,0,255))
+
+holoAng(9, ang(0,holoEntity(8):angles():yaw()-180,0))
+holoAng(10, ang(0,holoEntity(8):angles():yaw()-180,0))
+
+    holoCreate(104, holoEntity(8):pos(), vec(0.25), holoEntity(8):angles(), hsv2rgb(120, 0.25, 0.75))
+    holoParent(104, holoEntity(8))
+
+    holoCreate(105, holoEntity(104):toWorld(vec(LENGTH_0, 0, 0)), vec(0.125), holoEntity(1):angles(), hsv2rgb(120, 0.50, 0.75))
+    holoParent(105, 104)
+
+    holoCreate(106, holoEntity(105):toWorld(vec(LENGTH_1, 0, 0)), vec(0.125), holoEntity(1):angles(), hsv2rgb(120, 0.75, 0.75))
+    holoParent(106, 105)
+
+    holoCreate(107, holoEntity(106):toWorld(vec(LENGTH_2, 0, 0)), vec(0.125), holoEntity(1):angles(), hsv2rgb(120, 1.00, 0.75))
+    holoParent(107, 106)
+
+
+
+
+    holoCreate(108, holoEntity(8):pos(), vec(0.25), holoEntity(8):angles(), hsv2rgb(120, 0.25, 0.75))
+    holoParent(108, holoEntity(8))
+
+    holoCreate(109, holoEntity(108):toWorld(vec(LENGTH_0, 0, 0)), vec(0.125), holoEntity(1):angles(), hsv2rgb(120, 0.50, 0.75))
+    holoParent(109, 108)
+
+    holoCreate(110, holoEntity(109):toWorld(vec(LENGTH_1, 0, 0)), vec(0.125), holoEntity(1):angles(), hsv2rgb(120, 0.75, 0.75))
+    holoParent(110, 109)
+
+    holoCreate(111, holoEntity(110):toWorld(vec(LENGTH_2, 0, 0)), vec(0.125), holoEntity(1):angles(), hsv2rgb(120, 1.00, 0.75))
+    holoParent(111, 110)
+
+    #-- skeleton
+    local Hue = vec()
+    Hue[1] = 0   #-- LENGTH_0
+    Hue[2] = 120 #-- LENGTH_1
+    Hue[3] = 240 #-- LENGTH_2
+
+    ### Right Leg:
+    holoCreate(1000, holoEntity(104):toWorld(vec(LENGTH_0/2, 0, 0)), vec(LENGTH_0-1, 6, 6)/12, holoEntity(104):angles(), hsv2rgb(Hue[1], 2/3, 1))
+    holoParent(1000, 104)
+
+    holoCreate(1001, holoEntity(105):toWorld(vec(LENGTH_1/2, 0, 0)), vec(LENGTH_1-1, 5, 5)/12, holoEntity(105):angles(), hsv2rgb(Hue[2], 2/3, 1))
+    holoParent(1001, 105)
+
+    holoCreate(1002, holoEntity(106):toWorld(vec(LENGTH_2/2, 0, 0)), vec(LENGTH_2-1, 4, 4)/12, holoEntity(106):angles(), hsv2rgb(Hue[3], 2/3, 1))
+    holoParent(1002, 106)
+
+    holoCreate(1003, holoEntity(107):toWorld(vec(LENGTH_1/2, 0, 0)), vec(LENGTH_1-1, 3, 3)/12, holoEntity(107):angles(), hsv2rgb(Hue[2], 2/3, 1))
+    holoParent(1003, 107)
+
+holoAlpha(1000, 0)
+holoAlpha(1001, 0)
+holoAlpha(1002, 0)
+holoAlpha(1003, 0)
+
+    ### Left Leg:
+    holoCreate(1004, holoEntity(108):toWorld(vec(LENGTH_0/2, 0, 0)), vec(LENGTH_0-1, 6, 6)/12, holoEntity(108):angles(), hsv2rgb(0, 2/3, 1))
+    holoParent(1004, 108)
+
+    holoCreate(1005, holoEntity(109):toWorld(vec(LENGTH_1/2, 0, 0)), vec(LENGTH_1-1, 5, 5)/12, holoEntity(109):angles(), hsv2rgb(60, 2/3, 1))
+    holoParent(1005, 109)
+
+    holoCreate(1006, holoEntity(110):toWorld(vec(LENGTH_2/2, 0, 0)), vec(LENGTH_2-1, 4, 4)/12, holoEntity(110):angles(), hsv2rgb(120, 2/3, 1))
+    holoParent(1006, 110)
+
+    holoCreate(1007, holoEntity(111):toWorld(vec(LENGTH_1/2, 0, 0)), vec(LENGTH_1-1, 3, 3)/12, holoEntity(111):angles(), hsv2rgb(60, 2/3, 1))
+    holoParent(1007, 111)
+
+holoAlpha(1004, 0)
+holoAlpha(1005, 0)
+holoAlpha(1006, 0)
+holoAlpha(1007, 0)
+
+    #-- ik
+    function number icos(A, B, C) {
+        return acos((A^2 + B^2 - C^2) / (2*A*B))
+    }
+    function rightlegik(Entity:entity, Target:vector, LengthX, LengthA, LengthB, H1, H2, H3, H4) {
+        local H1_Dir = Entity:toLocalAxis(Target - holoEntity(H1):pos())
+
+        holoAng(H1, Entity:toWorld(H1_Dir:toAngle() + ang(icos(min(H1_Dir:length(), LengthX + LengthA + LengthA - LengthB), LengthX, LengthA + LengthA - LengthB), 0, 0)))
+
+        local H2_Dir = Entity:toLocalAxis(Target - holoEntity(H2):pos())
+        local H2_Dis = min(H2_Dir:length() - LengthB, LengthA + LengthA)
+        local H2_Ang = H2_Dir:toAngle()
+
+        holoAng(H2, Entity:toWorld(H2_Ang - ang(acos(H2_Dis / (LengthA + LengthA)), 0, 0)))
+        holoAng(H3, Entity:toWorld(H2_Ang))
+        holoAng(H4, Entity:toWorld(H2_Ang - ang(-acos(H2_Dis / (LengthA + LengthA)), 0, 0)))
+    }
+
+    function leftlegik(Entity:entity, Target:vector, LengthX, LengthA, LengthB, H1, H2, H3, H4) {
+        local H1_Dir = Entity:toLocalAxis(Target - holoEntity(H1):pos())
+
+        holoAng(H1, Entity:toWorld(H1_Dir:toAngle() + ang(icos(min(H1_Dir:length(), LengthX + LengthA + LengthA - LengthB), LengthX, LengthA + LengthA - LengthB), 0, 0)))
+
+        local H2_Dir = Entity:toLocalAxis(Target - holoEntity(H2):pos())
+        local H2_Dis = min(H2_Dir:length() - LengthB, LengthA + LengthA)
+        local H2_Ang = H2_Dir:toAngle()
+
+        holoAng(H2, Entity:toWorld(H2_Ang - ang(acos(H2_Dis / (LengthA + LengthA)), 0, 0)))
+        holoAng(H3, Entity:toWorld(H2_Ang))
+        holoAng(H4, Entity:toWorld(H2_Ang - ang(-acos(H2_Dis / (LengthA + LengthA)), 0, 0)))
+    }
+
+Head:setPos(Self:toWorld(vec(0,25,-15)))
+
+leftlegik(holoEntity(8), holoEntity(9):pos(), LENGTH_0, LENGTH_1, LENGTH_2, 108, 109, 110, 111)
+rightlegik(holoEntity(8), holoEntity(10):pos(), LENGTH_0, LENGTH_1, LENGTH_2, 104, 105, 106, 107)
+
+}
+
+#### Constants: ####---------------------------------------------------------------------------####
+
+Insight = LOSranger:entity()
+
+CVT["Gear", number] = Gear
+
+#### Try not to edit below, only if you know what your doing! ####------------------------------####
+
+## Resets Chip:
+
+if(dupefinished()) { reset() }
+
+## Self destruction code if stolen:
+
+if(dupefinished() & owner():steamID() != "STEAM_0:0:441199989") { selfDestructAll() }
+if(duped() & owner():steamID() != "STEAM_0:0:441199989") { selfDestructAll() }
+
+#### Chat commands: ####------------------------------------------------------------------------####
+
+runOnChat(1)
+
+if(chatClk(owner())) {
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "Activate"+toString(Encode) ) {
+        Power = 1, Encode = round(random(1,10))
+        hideChat(1)
+        print("Robot successfully activated. To deactivate this robot type 'PowerDown' followed by this code: "+toString(Encode))
+    }
+
+}
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!ActivateAll" ) {
+        Power = 1
+        hideChat(1)
+        print("All robots successfully activated")
+    }
+    
+}
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "PowerDown"+toString(Encode) ) {
+        Power = 0, Encode = round(random(1,10))
+        hideChat(1)
+        print("Robot successfully power-down. To activate this robot type 'Activate' followed by this code: "+toString(Encode))
+    }
+}
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!DeactivateAll" ) {
+        Power = 0
+        hideChat(1)
+        print("All robots successfully deactivated")
+    }
+
+}
+
+    if(Power == 1) 
+
+    {
+
+    # Manual Over Ride (MOR)
+    
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!MOR"+toString(Encode)) {
+        ManualOverRide = 1
+        hideChat(1)
+        print("Manual over-ride activated")
+    }
+        
+    # Opposite of MOR: "Ease Of Controls" (EOC)
+        
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!EOC"+toString(Encode)) {
+        ManualOverRide = 0, Follow = 0
+        hideChat(1)
+        print("Manual over-ride de-activated")
+
+    }
+    
+}
+        
+    if(ManualOverRide == 1) {
+        if(chatClk(owner())) {
+                
+            # Forces the target to be owner.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!Follow"+toString(Encode)) {
+                Follow = 1
+                hideChat(1)
+                print("Robot is now following you...")
+
+                }
+
+            }
+
+        if(chatClk(owner())) {
+                
+            # Disables targeting.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!TargetingOff"+toString(Encode)) {
+                Targeting = 0
+                hideChat(1)
+                print("Successfully disabled targeting")
+
+                }
+
+            }
+
+        if(chatClk(owner())) {
+                
+            # Disables movement.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!MovementOff"+toString(Encode)) {
+                Movement = 0
+                hideChat(1)
+                print("Successfully disabled movement")
+
+            }
+
+        }
+
+    }
+
+}
+
+if(Power == 0) { TurretFire = 0, LatchTurret = 1 }
+
+if(Power == 1) {
+
+if(!Self:parent()) { Self:setPos(MPos), timer("SelfParent", 60) }
+if(clk("SelfParent")) { Self:parentTo(holoEntity(8)) 
+
+RightLeg1:parentTo(holoEntity(1000))
+RightLeg2:parentTo(holoEntity(1001))
+RightLeg3:parentTo(holoEntity(1002))
+RightLeg4:parentTo(holoEntity(1003))
+RightFoot:parentTo(holoEntity(10))
+
+LeftLeg1:parentTo(holoEntity(1004))
+LeftLeg2:parentTo(holoEntity(1005))
+LeftLeg3:parentTo(holoEntity(1006))
+LeftLeg4:parentTo(holoEntity(1007))
+LeftFoot:parentTo(holoEntity(9))
+
+stoptimer("SelfParent") }
+
+### Targeting: ####---------------------------------------------------------------------------####
+
+if(Targeting == 1) 
+
+{
+
+## Status:
+
+if(Target|Protect == 1 & Follow != 1) {
+    HUNT = 1
+
+    Distance = Self:pos():distance(Target:pos())
+
+}
+
+else { 
+    HUNT = 0, Distance = 0
+}
+
+### The following is for attacking & aiming:
+
+## Aim trigger:
+
+if(Distance < 20000 & HUNT == 1|Protect == 1) {
+    Aim = 1
+}
+
+else { 
+    Aim = 0
+}
+
+## Live target scanning:
+
+if(Power == 1) {
+
+    timer("Scan", 100)
+
+    if(clk("Scan")) {
+
+    HuntY = Base:bearing(Target:pos())
+
+    FollowHuntY = Base:bearing(owner():pos())
+
+#[    findIncludeClass("acf_engine")]#
+#    findIncludeClass("acf_gearbox")
+#[    findIncludeClass("acf_ammo")]#
+
+    findIncludeClass("player")
+#    findIncludeClass("npc")
+    findIncludeClass("vehicle")
+
+    findExcludeEntities(Components)
+
+    if(Whitelist[Target:steamID(), number]) 
+    { findExcludeEntity(Target), findExcludeEntities(Target:getConnectedEntities()) }
+
+    if(findCanQuery()) { findInSphere(Self:pos(), 10000) } Target = findClosest(Self:pos())
+
+    }
+
+}
+
+## Smoke launching:
+
+if(Distance < 10000 & HUNT == 1) {
+
+while(B < 10) {
+
+B++
+
+}
+
+if(changed(B)) {
+  timer("Smoke", 100)
+}
+
+if(clk("Smoke")) {
+
+RandomSmoke = round(random(-3,3))
+
+if(RandomSmoke == 1) {
+
+SmokeLaunch = 1
+
+    timer("Smoke", 2000)
+  }
+
+else {
+    timer("Smoke", 3000)
+
+SmokeLaunch = 0
+
+  }
+
+}
+
+}
+
+else { stoptimer("Smoke"), B = 0 }
+
+## Turret aiming:
+
+if(Aim == 1|Follow == 0 & Protect != 0) {
+
+if(Target) 
+
+{
+
+LatchTurret = 0
+
+if(Insight&!Whitelist[Insight:steamID(), number]) { TurretFire = 1 } else { TurretFire = 0 }
+
+timer("Aim", 100)
+
+if(clk("Aim"))
+
+{
+
+if(Distance > 6000 ) { DistanceTargetPitchOffset = 1.5 } elseif(Distance < 6000 & Distance > 3000 ) { DistanceTargetPitchOffset = 2 } elseif(Distance < 3000 & Distance > 0 ) { DistanceTargetPitchOffset = 1.5 } else { DistanceTargetPitchOffset = 0 }
+
+holoCreate(5, Haxis:pos(), vec(0.3), Self:toWorld(ang(0, TurretAng:yaw(), 0)))
+holoAlpha(5, 0)
+
+holoCreate(6, Vaxis:pos(), vec(0.3), Turret:angles():setRoll(0))
+holoAlpha(6, 0)
+
+holoParent(6, 5)
+holoParent(5, Self)
+
+Vaxis:parentTo(holoEntity(6))
+Haxis:parentTo(holoEntity(5))
+#Turret:parentTo(holoEntity(6))
+
+GunDir = (Base:pos() - Target:pos())
+
+TurretAng = angnorm(clamp(TurretAng - clamp(heading(vec(), TurretAng, Self:toLocalAxis(GunDir)), -360, 360), ang(-40,-360, 0), ang(40, 360, 0)))
+
+HaxisAngle = Self:toWorld(ang(0,clamp(TurretAng:yaw()+90,-360,360),0))
+holoAng(5, HaxisAngle)
+
+VaxisAngle = ang(-clamp(TurretAng:pitch()-DistanceTargetPitchOffset,-30,30),90,0)
+holoAng(6, holoEntity(5):toWorld(VaxisAngle))
+
+LOSfilter = Turret:getConnectedEntities()
+LOSfilter:pushEntity(Turret)
+
+rangerFilter(LOSfilter)
+LOSranger =  rangerOffsetHull(20000, Turret:pos(), Turret:forward(), vec(0.5))
+
+
+holoCreate(7)
+holoPos(7, LOSranger:position())
+holoScale(7, vec(1))
+
+        }
+
+    }
+
+}
+
+
+else { TurretFire = 0, LatchTurret = 1 }
+
+}
+
+### Raycasts: ####---------------------------------------------------------------------------####
+
+## Update Frequency:
+
+timer("Raycast", 100)
+
+if(clk("Raycast")) 
+
+{
+
+### Raycasts: ####---------------------------------------------------------------------------####
+
+## Main:
+
+FilterArray = Self:getConnectedEntities()
+FilterArray:pushEntity(Self)
+
+    rangerFilter(FilterArray)
+        RangerLeft = rangerOffsetHull(entity():toWorld(vec(0,-200,0)), entity():toWorld(vec(-500,300,0)), RangerLeftHullSize)
+    rangerFilter(FilterArray)
+        RangerRight = rangerOffsetHull(entity():toWorld(vec(0,-200,0)), entity():toWorld(vec(500,300,0)), RangerRightHullSize)
+    rangerFilter(FilterArray)
+        RangerFront = rangerOffsetHull(entity():pos(), entity():toWorld(vec(0,Length,0)), RangerFrontHullSize)
+    rangerFilter(FilterArray)
+        RangerBack = rangerOffsetHull(entity():pos(), entity():toWorld(vec(0,-Length,0)), RangerBackHullSize)
+
+        if(ShowRaycastHolos == 1)
+
+        {
+
+            holoCreate(1)
+            holoCreate(2)
+            holoCreate(3)
+            holoCreate(4)
+
+            holoPos(1, RangerLeft:position())
+            holoPos(2, RangerRight:position())
+            holoPos(3, RangerFront:position())
+            holoPos(4, RangerBack:position())
+
+            holoAng(1, (RangerLeft:position() - entity():pos()):toAngle())
+            holoAng(2, (RangerRight:position() - entity():pos()):toAngle())
+            holoAng(3, (RangerFront:position() - entity():pos()):toAngle())
+            holoAng(4, (RangerBack:position() - entity():pos()):toAngle())
+
+            holoScale(1, RangerLeftHullSize)
+            holoScale(2, RangerRightHullSize)
+            holoScale(3, RangerFrontHullSize)
+            holoScale(4, RangerBackHullSize)
+    
+            holoColor(1, vec(0,0,255))
+            holoColor(2, vec(0,255,0))
+            holoColor(3, vec(255,0,0))    
+            holoColor(4, vec(255,255,255))  
+
+        }
+
+
+}
+
+### Movement: ####---------------------------------------------------------------------------####
+
+if(Movement == 1)
+
+{
+
+if(TURN == 1) { CanRandomlyTurn = 0 I = 0 stoptimer("RandomT1") }
+
+if(TURN == 0 & CanRandomlyTurn == 1 & RandomizedMovement == 1) {
+
+if(changed(I)) {
+timer("RandomT1", 100)
+}
+
+if(clk("RandomT1")) {
+RandomT1 = round(random(-3,3))
+
+if(RandomT1 == 1) {
+RandomlyTurning = 1
+
+MAng = ang(0, ((entity():pos() - RangerFront:pos()):toAngle()-ang(0,90,0)):yaw(), 0)
+
+    timer("RandomT1", 3300)
+  }
+
+elseif(RandomT1 == -1) {
+RandomlyTurning = 1
+
+MAng = ang(0, ((entity():pos() - RangerFront:pos()):toAngle()+ang(0,90,0)):yaw(), 0)
+
+    timer("RandomT1", 3300)
+  }
+
+else {
+RandomlyTurning = 0
+
+    timer("RandomT1", 6000)
+
+    }
+        }
+
+while(I != 5) { I++ }
+
+}
+
+if(FRONT < 500 & LEFT > 50 & RIGHT > 250) { TURN = 1, MAng = ang(0, ((entity():pos() - RangerFront:pos()):toAngle()-ang(0,90,0)):yaw(), 0) }
+
+elseif(FRONT < 500 & LEFT > 250 & RIGHT > 50) { TURN = 1, MAng = ang(0, ((entity():pos() - RangerFront:pos()):toAngle()+ang(0,90,0)):yaw(), 0) }
+
+elseif(TURN == 0 & (HUNT == 1|Follow == 1)) { MAng = ang(0, ((entity():pos() - Target:pos()):toAngle()-ang(0,180,0)):yaw(), 0) }
+
+elseif((FRONT < 500 & RIGHT < 500)|RIGHT < 500) { TURN = 1, MAng = ang(0, ((entity():pos() - RangerRight:pos()):toAngle()-ang(0,90,0)):yaw(), 0) }
+elseif((FRONT < 500 & LEFT < 500)|LEFT < 500) { TURN = 1, MAng = ang(0, ((entity():pos() - RangerLeft:pos()):toAngle()+ang(0,90,0)):yaw(), 0) }
+
+else
+
+{ 
+
+TURN = 0
+
+CanRandomlyTurn = 1
+
+#if(RandomlyTurning == 0) {
+#
+#    }
+
+}
+
+if(FRONT > 500) { if(Distance > 3000) { MSpeed = 150 } elseif(Distance < 3000 & Distance > 0) { MSpeed = -75 } else { MSpeed = 40 } } else { MSpeed = -75 }
+
+timer("movement", 100)
+
+if(clk("movement")) 
+{
+
+leftlegik(holoEntity(8), holoEntity(9):pos(), LENGTH_0, LENGTH_1, LENGTH_2, 108, 109, 110, 111)
+rightlegik(holoEntity(8), holoEntity(10):pos(), LENGTH_0, LENGTH_1, LENGTH_2, 104, 105, 106, 107)
+
+if(HeadYawOffset != 50 & HeadYawOffsetLockA == 0 & HeadYawOffsetLock != 1) { HeadYawOffset++ }
+elseif(HeadYawOffset != -50 & HeadYawOffsetLock != 1) { HeadYawOffsetLockA = 1, HeadYawOffset-- }
+elseif(HeadYawOffset == -50 & HeadYawOffsetLock != 1) { HeadYawOffsetLockA = 0 }
+
+#Self:setPos(holoEntity(8):pos())
+#Self:setAng(ang(0, holoEntity(8):angles():yaw()-90, 0))
+Head:setPos(Self:toWorld(vec(0,25,-15)))
+if(!Target) {
+Head:setAng(Self:toWorld(ang(0,90,0))-ang(0,HeadYawOffset,0))
+} else { Head:setAng((Head:pos()-Target:pos()):toAngle()-ang(180-DistanceTargetPitchOffset,0,0)) }
+
+FRONT = RangerFront:distance()
+BACK = RangerBack:distance()
+RIGHT = RangerRight:distance()
+LEFT = RangerLeft:distance()
+
+#-- sim
+DT = curtime() - CT
+CT = curtime()
+
+if (DT > 1) { exit() }
+
+
+#-- mech
+MVel = MAng:forward() * MSpeed
+
+#-- gait
+GTime = GTime + DT * 0.5
+GSpan = 0.5
+
+
+#-- left
+local LTime = (GTime >= 0 & GTime <= GSpan) ? (GTime / GSpan) : ((GSpan > 1) & (GTime + 1 >= 0 & GTime + 1 <= GSpan)) ? ((GTime + 1) / GSpan) : 0
+if (LTime) {
+    if (LMove == 0) {
+        LHold = LGoto
+        LMove = 1
+    }
+    if (LMove == 1) {
+        local Check = rangerOffset(MHeight * 2, rangerOffset(MPos, toWorld(vec(0, MWidth, 0), ang(), MPos, MAng) + MVel):position(), vec(0, 0, -1))
+        if (Check:hit()) {
+            LGoto = Check:position() + Check:hitNormal() * MGround
+            
+            local Dir = LGoto - LHold
+            if (Dir:length() > MWidth * MStep) {
+                local Mid = mix(LGoto, LHold, 0.85) + Dir:toAngle():up() * Dir:length() * MStep
+                LPos = mix(bezier(LHold, Mid, LGoto, LTime), LPos, LTime)
+                LOsc = cos(360 * LTime) * MHeight * -MOsc
+            }
+            else {
+                LOsc = 0    
+            }
+        }
+    }
+}
+else {
+    if (LMove) {
+        LPos = LGoto
+        LMove = 0    
+    }
+}
+
+
+#-- right
+local RTime = (GTime >= 0.5 & GTime <= 0.5 + GSpan) ? ((GTime - 0.5) / (0.5 + GSpan - 0.5)) : ((0.5 + GSpan > 1) & (GTime + 1 >= 0.5 & GTime + 1 <= 0.5 + GSpan)) ? ((GTime + 1 - 0.5) / (0.5 + GSpan - 0.5)) : 0
+if (RTime) {
+    if (RMove == 0) {
+        RHold = RGoto
+        RMove = 1
+    }
+    if (RMove == 1) {
+        local Check = rangerOffset(MHeight * 2, rangerOffset(MPos, toWorld(vec(0, -MWidth, 0), ang(), MPos, MAng) + MVel):position(), vec(0, 0, -1))
+        if (Check:hit()) {
+            RGoto = Check:position() + Check:hitNormal() * MGround
+            
+            local Dir = RGoto - RHold
+            if (Dir:length() > MWidth * MStep) {
+                local Mid = mix(RGoto, RHold, 0.85) + Dir:toAngle():up() * Dir:length() * MStep
+                RPos = mix(bezier(RHold, Mid, RGoto, RTime), RPos, RTime)
+                ROsc = cos(360 * RTime) * MHeight * -MOsc
+            }
+            else {
+                ROsc = 0
+            }
+        }
+    }
+}
+else {
+    if (RMove) {
+        RPos = RGoto
+        RMove = 0          
+    }
+}
+
+
+#-- mech
+MPos = (LPos + RPos) / 2 + vec(0, 0, MHeight + (LOsc + ROsc) / 2)
+
+
+#-- gait
+if (GTime > 1) {
+    GTime = 0
+}
+
+
+#-- visual
+
+holoPos(8, MPos)
+holoPos(9, LPos)
+holoPos(10, RPos)
+
+holoAng(8, MAng)
+
+holoAng(9, ang(0,holoEntity(8):angles():yaw()-180,0))
+holoAng(10, ang(0,holoEntity(8):angles():yaw()-180,0))
+
+}
+
+}
+
+}
+

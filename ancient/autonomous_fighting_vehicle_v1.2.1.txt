@@ -1,0 +1,596 @@
+@name Autonomous Fighting Vehicle v1.2.1
+
+## Outputs and inputs:
+
+@inputs [Turret Haxis Vaxis Base]:entity 
+@inputs [CVT Fuel LeftTransfer RightTransfer]:wirelink
+@outputs Power:number [Throttle Gear]:number [TurretFire SmokeLaunch LatchTurret]:number
+
+### Variables:
+
+@persist [RandomizedMovement RandomlyTurning]:number
+@persist [TURN HUNT RANDOMIZE TIMERTURNING]:number 
+@persist [RandomSmoke ManualOverRide]:number 
+@persist [Encode RandomT1 RandomT2]:number
+@outputs [FRONT BACK LEFT RIGHT]:number
+
+@persist [Frequency Length]:number [RangerLeftOffset RangerRightOffset RangerFrontOffset RangerBackOffset]:number
+@persist [HoloScale]:vector [RangerLeftHullSize RangerRightHullSize RangerFrontHullSize RangerBackHullSize]:vector
+@persist [RangerLeft RangerRight RangerFront RangerBack]:ranger [LOSranger]:ranger
+@persist [FilterArray LOSfilter]:array [FilterProps]:number
+@persist [ShowRaycastHolos]:number
+
+@persist [Targeting Movement Follow Aim Protect]:number
+@persist I A
+@persist [Self Ow Insight]:entity
+
+@persist [HaxisYaw HaxisPitch HaxisRoll]:number [VaxisYaw VaxisPitch VaxisRoll]:number 
+@persist [VaxisAngle HaxisAngle TurretAng]:angle
+@persist [HuntY FollowHuntY]:number Whitelist:table Target:entity Distance
+
+@persist [TurretAngle TurretAngleOffset]:angle
+@persist [DistanceTargetPitchOffset]:number
+
+@inputs [GB1 GB2 GB3 GB4]:entity
+
+@persist Components:array
+
+    ##---## Author: Zan ##---##
+
+#### Variables: ####---------------------------------------------------------------------------####
+
+if(first())
+
+{
+
+Length = 1000
+Frequency = 100
+
+Targeting = 0
+Movement = 1
+ShowRaycastHolos = 0
+
+RangerLeftOffset = 270
+RangerRightOffset = 90
+RangerFrontOffset = 360
+RangerBackOffset = 180
+
+RangerLeftHullSize = vec(0.1,10,1)
+RangerRightHullSize = vec(0.1,10,1)
+RangerFrontHullSize = vec(10,0.1,1)
+RangerBackHullSize = vec(10,0.1,1)
+
+RandomizedMovement = 1
+
+Whitelist = table("STEAM_0:0:441199989"=1)
+
+Components = array(GB1, GB2, GB3)
+
+if(GB1) { print("1") }
+
+}
+
+#### Constants: ####---------------------------------------------------------------------------####
+
+FRONT = RangerFront:distance()
+BACK = RangerBack:distance()
+RIGHT = RangerRight:distance()
+LEFT = RangerLeft:distance()
+
+Insight = LOSranger:entity()
+
+CVT["Gear", number] = Gear
+
+Self = entity()   
+Ow = owner()
+
+#### Try not to edit below, only if you know what your doing! ####------------------------------####
+
+## Resets Chip:
+
+if(dupefinished()) { reset() }
+
+## Functionality based on startup:
+
+if(first()) { LatchTurret = 1, Protect = 0, Follow = 0, RightTransfer["Gear",number] = 1, LeftTransfer["Gear",number] = 1, Gear = 1, Display = Encode = round(random(1,10)), print("To activate this robot type 'Activate' followed by this code: "+toString(Encode)) }
+
+## Self destruction code if stolen:
+
+if(dupefinished() & owner():steamID() != "STEAM_0:0:441199989") 
+
+{
+        selfDestructAll()
+}
+    
+#### Chat commands: ####------------------------------------------------------------------------####
+
+runOnChat(1)
+
+if(chatClk(owner())) {
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "Activate"+toString(Encode) ) {
+        Power = 1, Encode = round(random(1,10))
+        hideChat(1)
+        print("Robot successfully activated. To deactivate this robot type 'PowerDown' followed by this code: "+toString(Encode))
+    }
+
+}
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!ActivateAll" ) {
+        Power = 1
+        hideChat(1)
+        print("All robots successfully activated")
+    }
+    
+}
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "PowerDown"+toString(Encode) ) {
+        Power = 0, Encode = round(random(1,10))
+        hideChat(1)
+        print("Robot successfully power-down. To activate this robot type 'Activate' followed by this code: "+toString(Encode))
+    }
+}
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!DeactivateAll" ) {
+        Power = 0
+        hideChat(1)
+        print("All robots successfully deactivated")
+    }
+
+}
+
+    if(Power == 1) 
+
+    {
+
+    # Manual Over Ride (MOR)
+    
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!MOR"+toString(Encode)) {
+        ManualOverRide = 1
+        hideChat(1)
+        print("Manual over-ride activated")
+    }
+        
+    # Opposite of MOR: "Ease Of Controls" (EOC)
+        
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!EOC"+toString(Encode)) {
+        ManualOverRide = 0, Follow = 0
+        hideChat(1)
+        print("Manual over-ride de-activated")
+
+if(ManualOverRide == 0) { if(Movement == 0) { Movement = 1 } if(Targeting == 0) { Targeting = 1 } }
+
+    }
+    
+}
+        
+    if(ManualOverRide == 1) {
+        if(chatClk(owner())) {
+                
+            # Forces the target to be owner.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!Follow"+toString(Encode)) {
+                Follow = 1
+                hideChat(1)
+                print("Robot is now following you...")
+
+                }
+
+            }
+
+        if(chatClk(owner())) {
+                
+            # Disables targeting.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!TargetingOff"+toString(Encode)) {
+                Targeting = 0
+                hideChat(1)
+                print("Successfully disabled targeting")
+
+                }
+
+            }
+
+        if(chatClk(owner())) {
+                
+            # Disables movement.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!MovementOff"+toString(Encode)) {
+                Movement = 0
+                hideChat(1)
+                print("Successfully disabled movement")
+
+            }
+
+        }
+
+    }
+
+}
+
+if(Power == 0) { TurretFire = 0, LatchTurret = 1 }
+
+if(Power == 1) {
+
+### Targeting: ####---------------------------------------------------------------------------####
+
+if(Targeting == 1) 
+
+{
+
+## Status:
+
+if(Target|Protect == 1 & Follow != 1) {
+    HUNT = 1
+}
+
+else { 
+    HUNT = 0
+}
+
+### The following is for attacking & aiming:
+
+## Aim trigger:
+
+if(Distance < 20000 & HUNT == 1|Protect == 1) {
+    Aim = 1
+}
+
+else { 
+    Aim = 0
+}
+
+## Live target scanning:
+
+if(Power == 1) {
+
+    timer("Scan", 100)
+
+    if(clk("Scan")) {
+
+    HuntY = Base:bearing(Target:pos())
+    FollowHuntY = Base:bearing(owner():pos())
+
+    Distance = Base:pos():distance(Target:pos())
+
+#[    findIncludeClass("acf_engine")]#
+#    findIncludeClass("acf_gearbox")
+#[    findIncludeClass("acf_ammo")]#
+
+#    findIncludeClass("player")
+    findIncludeClass("npc")
+    findIncludeClass("vehicle")
+
+    findExcludeEntities(Components)
+
+    if(findCanQuery()) { findInSphere(Base:pos(), 20000) } Target = findResult(1)
+
+    if(Whitelist[Target:steamID(), number]) { findExcludeEntity(Target) }
+
+    }
+
+}
+
+## Smoke launching:
+
+if(Distance < 10000 & HUNT == 1) {
+
+while(A < 10) {
+
+A++
+
+}
+
+
+if(clk("Smoke")) {
+
+local RandomSmoke = round(random(-3,3))
+
+print(RandomSmoke)
+
+if(RandomSmoke == 1) {
+
+SmokeLaunch = 1
+
+    timer("Smoke", 2000)
+  }
+
+else {
+    timer("Smoke", 3000)
+
+SmokeLaunch = 0
+
+  }
+
+}
+
+elseif(changed(A)) {
+  timer("Smoke", 100)
+}
+
+}
+
+else { stoptimer("Smoke") }
+
+## Turret aiming:
+
+if(Aim == 1|Follow == 0 & Protect != 0) {
+
+if(Target) 
+
+{
+
+LatchTurret = 0
+
+if(Insight) { TurretFire = 1 } else { TurretFire = 0 }
+
+timer("Aim", 100)
+
+if(clk("Aim"))
+
+{
+
+if(Distance > 3000 ) { DistanceTargetPitchOffset = 0 } elseif(Distance < 3000 & Distance > 1000 ) { DistanceTargetPitchOffset = 0.5 } elseif(Distance < 1000 & Distance > 0 ) { DistanceTargetPitchOffset = 4.5 } else { DistanceTargetPitchOffset = 0 }
+
+holoCreate(5, Haxis:pos(), vec(0.3), Self:toWorld(ang(0, TurretAng:yaw(), 0)))
+holoAlpha(5, 0)
+
+holoCreate(6, Vaxis:pos(), vec(0.3), Turret:angles():setRoll(0))
+holoAlpha(6, 0)
+
+holoParent(6, 5)
+holoParent(5, Self)
+
+Vaxis:parentTo(holoEntity(6))
+Haxis:parentTo(holoEntity(5))
+Turret:parentTo(holoEntity(6))
+
+GunDir = (Base:pos() - Target:pos())
+
+TurretAng = angnorm(clamp(TurretAng - clamp(heading(vec(), TurretAng, Self:toLocalAxis(GunDir)), -360, 360), ang(-40,-360, 0), ang(40, 360, 0)))
+
+HaxisAngle = Self:toWorld(ang(0,clamp(TurretAng:yaw()+90,-360,360),0))
+holoAng(5, HaxisAngle)
+
+VaxisAngle = ang(-clamp(TurretAng:pitch()-DistanceTargetPitchOffset,-30,30),90,0)
+holoAng(6, holoEntity(5):toWorld(VaxisAngle))
+
+LOSfilter = Turret:getConnectedEntities()
+LOSfilter:pushEntity(Turret)
+
+rangerFilter(LOSfilter)
+LOSranger =  rangerOffsetHull(20000, Turret:pos(), Turret:forward(), vec(0.5))
+
+
+holoCreate(7)
+holoPos(7, LOSranger:position())
+holoScale(7, vec(0.5))
+
+        }
+
+    }
+
+}
+
+
+else { TurretFire = 0, LatchTurret = 1 }
+
+}
+
+### Raycasts: ####---------------------------------------------------------------------------####
+
+## Update Frequency:
+
+timer("RaycastA", 100)
+
+if(clk("RaycastA")) 
+
+{
+
+### Raycasts: ####---------------------------------------------------------------------------####
+
+## Main:
+
+FilterArray = Base:getConnectedEntities()
+FilterArray:pushEntity(Base)
+
+    rangerFilter(FilterArray)
+        RangerLeft = rangerAngleHull( Length, entity():toLocal(Base:angles()):yaw()+RangerLeftOffset, 90, RangerLeftHullSize)
+    rangerFilter(FilterArray)
+        RangerRight = rangerAngleHull( Length, entity():toLocal(Base:angles()):yaw()+RangerRightOffset, 90, RangerRightHullSize)
+    rangerFilter(FilterArray)
+        RangerFront = rangerAngleHull( Length, entity():toLocal(Base:angles()):yaw()+RangerFrontOffset, 90, RangerFrontHullSize)
+    rangerFilter(FilterArray)
+        RangerBack = rangerAngleHull( Length, entity():toLocal(Base:angles()):yaw()+RangerBackOffset, 90, RangerBackHullSize)
+
+        if(ShowRaycastHolos == 1)
+
+        {
+
+            holoCreate(1)
+            holoCreate(2)
+            holoCreate(3)
+            holoCreate(4)
+
+            holoPos(1, RangerLeft:position())
+            holoPos(2, RangerRight:position())
+            holoPos(3, RangerFront:position())
+            holoPos(4, RangerBack:position())
+    
+            holoScale(1, RangerLeftHullSize)
+            holoScale(2, RangerRightHullSize)
+            holoScale(3, RangerFrontHullSize)
+            holoScale(4, RangerBackHullSize)
+    
+            holoColor(1, vec(0,0,255))
+            holoColor(2, vec(0,255,0))
+            holoColor(3, vec(255,0,0))    
+            holoColor(4, vec(255,255,255))  
+
+        }
+
+
+}
+
+### Movement: ####---------------------------------------------------------------------------####
+
+if(Movement == 1)
+
+{
+
+## The following is for turning movement:
+
+if(FRONT < 600 & LEFT > 50 & RIGHT > 600) { TURN = 1, RightTransfer["Gear",number] = 2, LeftTransfer["Gear",number] = 1 }
+
+elseif(FRONT < 600 & LEFT > 600 & RIGHT > 50) { TURN = 1, RightTransfer["Gear",number] = 1, LeftTransfer["Gear",number] = 2 }
+
+elseif(Distance > 3000 & TURN == 0 & HUNT == 1 & sign(HuntY) == 1) 
+
+{ RightTransfer["Gear",number] = 1, LeftTransfer["Gear",number] = 1
+
+RightTransfer["Left Brake",number] = 0, RightTransfer["Right Brake",number] = 0, RightTransfer["Left Clutch",number] = 0, RightTransfer["Right Clutch",number] = 0
+LeftTransfer["Left Brake",number] = 35, LeftTransfer["Right Brake",number] = 35, LeftTransfer["Left Clutch",number] = 1, LeftTransfer["Right Clutch",number] = 1
+
+}
+
+elseif(Distance > 3000 & TURN == 0 & HUNT == 1 & sign(HuntY) == -1) 
+
+{ RightTransfer["Gear",number] = 1, LeftTransfer["Gear",number] = 1
+
+RightTransfer["Left Brake",number] = 35, RightTransfer["Right Brake",number] = 35, RightTransfer["Left Clutch",number] = 1, RightTransfer["Right Clutch",number] = 1
+LeftTransfer["Left Brake",number] = 0, LeftTransfer["Right Brake",number] = 0, LeftTransfer["Left Clutch",number] = 0, LeftTransfer["Right Clutch",number] = 0
+
+}
+
+elseif(Distance > 3000 & TURN == 0 & Follow == 1 & sign(FollowHuntY) == 1) 
+
+{ RightTransfer["Gear",number] = 1, LeftTransfer["Gear",number] = 1
+
+RightTransfer["Left Brake",number] = 0, RightTransfer["Right Brake",number] = 0, RightTransfer["Left Clutch",number] = 0, RightTransfer["Right Clutch",number] = 0
+LeftTransfer["Left Brake",number] = 35, LeftTransfer["Right Brake",number] = 35, LeftTransfer["Left Clutch",number] = 1, LeftTransfer["Right Clutch",number] = 1
+
+}
+
+elseif(Distance > 3000 & TURN == 0 & Follow == 1 & sign(FollowHuntY) == -1) 
+
+{ RightTransfer["Gear",number] = 1, LeftTransfer["Gear",number] = 1
+
+RightTransfer["Left Brake",number] = 35, RightTransfer["Right Brake",number] = 35, RightTransfer["Left Clutch",number] = 1, RightTransfer["Right Clutch",number] = 1
+LeftTransfer["Left Brake",number] = 0, LeftTransfer["Right Brake",number] = 0, LeftTransfer["Left Clutch",number] = 0, LeftTransfer["Right Clutch",number] = 0
+
+}
+
+elseif(Distance < 3000 & Distance > 1000 & TURN == 0 & HUNT == 1 & sign(HuntY) == 1) { RightTransfer["Gear",number] = 1, LeftTransfer["Gear",number] = 2 }
+elseif(Distance < 3000 & Distance > 1000 & TURN == 0 & HUNT == 1 & sign(HuntY) == -1) { RightTransfer["Gear",number] = 2, LeftTransfer["Gear",number] = 1 }
+
+elseif(FRONT < 500 & RIGHT < 600) { TURN = 1, RightTransfer["Gear",number] = 2, LeftTransfer["Gear",number] = 1 }
+elseif(FRONT < 500 & LEFT < 600) { TURN = 1, RightTransfer["Gear",number] = 1, LeftTransfer["Gear",number] = 2 }
+
+elseif(RIGHT < 500) { TURN = 1, RightTransfer["Gear",number] = 2, LeftTransfer["Gear",number] = 1 }
+elseif(LEFT < 500) { TURN = 1, RightTransfer["Gear",number] = 1, LeftTransfer["Gear",number] = 2 }
+
+elseif(RIGHT > 100 & LEFT > 100 & RIGHT < 800 & LEFT < 800) 
+{ TURN = 1, RightTransfer["Gear",number] = 1, LeftTransfer["Gear",number] = 1 
+
+
+RightTransfer["Left Brake",number] = 0, RightTransfer["Right Brake",number] = 0, RightTransfer["Left Clutch",number] = 0, RightTransfer["Right Clutch",number] = 0
+LeftTransfer["Left Brake",number] = 0, LeftTransfer["Right Brake",number] = 0, LeftTransfer["Left Clutch",number] = 0, LeftTransfer["Right Clutch",number] = 0
+
+}
+
+else
+
+{ 
+
+TURN = 0
+
+if(RandomlyTurning == 0) {
+
+RightTransfer["Gear",number] = 1, LeftTransfer["Gear",number] = 1
+
+RightTransfer["Left Brake",number] = 0, RightTransfer["Right Brake",number] = 0, RightTransfer["Left Clutch",number] = 0, RightTransfer["Right Clutch",number] = 0
+LeftTransfer["Left Brake",number] = 0, LeftTransfer["Right Brake",number] = 0, LeftTransfer["Left Clutch",number] = 0, LeftTransfer["Right Clutch",number] = 0
+
+while(I == 5) {
+
+I--
+
+        }
+
+    }
+
+}
+
+if(TURN == 0 & RandomizedMovement == 1) {
+
+RandomlyTurning = 1
+
+while(I < 5) {
+
+I++
+
+print("I: "+I)
+
+}
+
+if(changed(I)) {
+  timer("RandomT1", 100)
+}
+
+if(clk("RandomT1")) {
+
+RandomT1 = round(random(-3,3)), RandomlyTurning = 1
+
+print("Randomized turning value: "+RandomT1)
+
+if(RandomT1 == 1) {
+
+RightTransfer["Gear",number] = 1, LeftTransfer["Gear",number] = 2
+
+RightTransfer["Left Brake",number] = 0, RightTransfer["Right Brake",number] = 0, RightTransfer["Left Clutch",number] = 0, RightTransfer["Right Clutch",number] = 0
+LeftTransfer["Left Brake",number] = 0, LeftTransfer["Right Brake",number] = 0, LeftTransfer["Left Clutch",number] = 0, LeftTransfer["Right Clutch",number] = 0
+
+RandomlyTurning = 1
+
+    timer("RandomT1", 2000)
+  }
+
+elseif(RandomT1 == 2) {
+
+RightTransfer["Gear",number] = 2, LeftTransfer["Gear",number] = 1
+
+RightTransfer["Left Brake",number] = 0, RightTransfer["Right Brake",number] = 0, RightTransfer["Left Clutch",number] = 0, RightTransfer["Right Clutch",number] = 0
+LeftTransfer["Left Brake",number] = 0, LeftTransfer["Right Brake",number] = 0, LeftTransfer["Left Clutch",number] = 0, LeftTransfer["Right Clutch",number] = 0
+
+RandomlyTurning = 1
+
+    timer("RandomT1", 2000)
+  }
+
+else {
+    timer("RandomT1", 4000), RandomlyTurning = 0
+    }
+        }
+}
+
+if(Distance < 1000 & HUNT == 1) { Gear = 2, Throttle = 100 }
+
+if(FRONT > 600) { Gear = 1, Throttle = 100 }
+else { Gear = 2, Throttle = 100 }
+
+}
+
+}

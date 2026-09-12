@@ -1,0 +1,71 @@
+@name Defense drone experimental a790
+@inputs [LEFT FRONT BACK RIGHT]:number [TTVr TTVl]:number [Insight Target]:entity [Distance]:number
+@outputs [TURNr TURNl]:number [Forwardrw Forwardlw Backwardrw Backwardlw]:number [Speedmod]:number [RIGHTo LEFTo]:number [TurretFire Aim]:number
+@persist [PATROL HUNT]:number Base:entity
+
+## Self destruction code if stolen:
+
+if(owner():steamID()!= "STEAM_0:0:441199989"){
+        selfDestruct()
+}
+
+## Constants/Variables:
+
+Distance = Base:pos():distance(Target:pos())
+HuntY = Base:bearing(Target:pos())
+
+Base = entity():isWeldedTo()
+
+## Status:
+
+if(Target) {
+    HUNT = 1
+}
+
+else { 
+    HUNT = 0
+}
+
+# The following is for attacking & aiming:
+
+## Aim trigger:
+
+if(Distance < 500) {
+    Aim = 1
+}
+
+else { 
+    Aim = 0
+}
+
+## Attack trigger:
+
+if(Insight) {
+    TurretFire = 1
+}
+
+else { 
+    TurretFire = 0
+}
+
+## The following is for movement:
+
+if(FRONT < 500 & LEFT > 50 & RIGHT > 500) { TURN = 1, A = 1, D = -1 }
+
+elseif(FRONT < 500 & LEFT > 500 & RIGHT > 50) { TURN = 1, A = -1, D = 1 }
+
+elseif(TURN == 0 & HUNT == 1 & sign(HuntY) == 1) { A = 1, D = -1 }
+elseif(TURN == 0 & HUNT == 1 & sign(HuntY) == -1) { A = -1, D = 1 }
+
+elseif(FRONT < 600 & RIGHT < 600) { TURN = 1, A = 1, D = -1 }
+elseif(FRONT < 600 & LEFT < 600) { TURN = 1, A = -1, D = 1 }
+
+elseif(RIGHT < 600) { TURN = 1, A = 1, D = -1 }
+elseif(LEFT < 600) { TURN = 1, A = -1, D = 1 }
+
+else { TURN = 1, A = 1, D = 1 }
+
+## The following is to output movement:
+
+RIGHTo = (Forwardrw + Backwardrw)
+LEFTo = (Forwardlw + Backwardlw)

@@ -1,0 +1,219 @@
+@name autonomous self driving vehicle prototype v1
+@inputs [LEFT FRONT BACK RIGHT]:number [TTVr TTVl]:number [Insight Target]:entity [Distance]:number
+@outputs [TURNr TURNl]:number [Forwardrw Forwardlw Backwardrw Backwardlw]:number [Speedmod]:number [RIGHTo LEFTo]:number [TurretFire Aim]:number [TimerDisplayOut RandomizerDisplayOut]:number Throttle
+@persist [PATROL HUNT RANDOMIZE TIMERTURNING]:number ACTIVATION:number
+
+
+## Self destruction code if stolen:
+
+if(owner():steamID()!= "STEAM_0:0:441199989"){
+        selfDestruct()
+}
+
+## Constants/Variables:
+            
+TimerDisplayOut = RANDOMIZE
+
+RandomizerDisplayOut = TIMERTURNING
+
+### All the following are security commands... Have fun and stay safe... ###
+
+runOnChat(1)
+
+if(chatClk(owner())) {
+    
+    # Manual Over Ride (MOR)
+    
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "MOR") {
+        ACTIVATION = 1
+        print("COMMAND-SENT!")
+    }
+        
+    # Opposite of MOR; "Ease Of Controls" (EOC)
+        
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "EOC") {
+        ACTIVATION = 0
+        print("COMMAND-SENT!")
+    }
+        
+    if(ACTIVATION==1) {
+        if(chatClk(owner())) {
+                
+            # Forces the target to be owner.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "FOLLOW") {
+                Target = owner()
+                print("COMMAND-SENT!")
+            }
+
+        }
+    }
+}
+
+## Throttle:
+
+if(HUNT == 0) {
+    Throttle = 50
+}
+
+elseif(HUNT == 1 & Distance < 1000 & Distance > 500) {
+    Throttle = 75
+}
+
+elseif(HUNT == 1 & Distance < 500 & Distance > 200) {
+    Throttle = 65
+}
+
+## Status:
+
+if(Target) {
+    HUNT = 1
+}
+
+else { 
+    HUNT = 0
+}
+
+# The following is for attacking & aiming:
+
+## Aim trigger:
+
+if(Distance < 1000 & HUNT == 1) {
+    Aim = 1
+}
+
+else { 
+    Aim = 0
+}
+
+## Attack trigger:
+
+if(Insight & HUNT == 1 & Insight:steamID() != "STEAM_0:0:441199989") {
+    TurretFire = 1
+}
+
+else { 
+    TurretFire = 0
+}
+
+## The following is for turning:
+
+if(FRONT < 75 & RIGHT < 75) {
+    TURNr = -1, TURNl = 1
+}
+
+else { 
+    TURNr = 0, TURNl = 0
+}
+
+if(FRONT < 75 & LEFT < 75) {
+    TURNl = -1, TURNr = 1
+}
+
+else { 
+    TURNl = 0, TURNr = 0
+}
+
+## The following is also for turning:
+
+if(RIGHT < 85) {
+    TURNr = -1, TURNl = 1
+}
+
+elseif(TTVr == 1 & HUNT == 1) {
+    TURNr = -1, TURNl = 1
+}
+
+elseif(TTVr == -1 & HUNT == 1) {
+    TURNr = 1, TURNl = -1
+}
+
+#[else { 
+    TURNr = 0
+}]#
+
+if(LEFT < 85) {
+    TURNl = 1, TURNr = -1
+}
+
+elseif(TTVl == 1 & HUNT == 1) {
+    TURNl = -1, TURNr = 1
+}
+
+elseif(TTVl == -1 & HUNT == 1) {
+    TURNl = 1, TURNr = -1
+}
+
+#[else { 
+    TURNl = 0
+}]#
+
+## The following is for turning movement:
+
+if(TURNr == -1 & TURNl == 1) {
+    Forwardrw = -1, Forwardlw = 1
+}
+
+if(TURNl == -1 & TURNr == 1) {
+    Forwardrw = 1, Forwardlw = -1
+}
+
+## The following unstucks the build:
+
+if(FRONT < 90 & RIGHT > 10 & LEFT > 20) {
+    Forwardrw = -1, Forwardlw = 1, Backwardrw = 1, Backwardlw = 1
+}
+
+if(FRONT < 90 & LEFT > 10 & RIGHT > 20) {
+    Forwardrw = 1, Forwardlw = -1, Backwardrw = 1, Backwardlw = 1
+}
+
+## The following is for back & forward movement:
+
+# Front:
+
+if(FRONT < 50) {
+    Backwardrw = -1, Backwardlw = -1
+}
+
+elseif(FRONT > 75) {
+    Backwardrw = 1, Backwardlw = 1
+}
+
+#[else {
+    Backwardrw = 0, Backwardlw = 0
+}]#
+
+# Back:
+
+if(BACK < 75) {
+    Backwardrw = 1, Backwardlw = 1
+}
+
+#[elseif(TURNr != -1 & TURNl != 1 & TURNl != -1 & TURNr != 1) {
+    Backwardrw = 0, Backwardlw = 0
+}]#
+
+## The following is to output movement:
+
+#[RIGHTo = (Forwardrw + Backwardrw)
+LEFTo = (Forwardlw + Backwardlw)]#
+
+#[## The following randomizes movement:
+
+# Timing & randomizing:
+
+timer("launch", 10000)
+
+if(clk("launch")) { round(TIMERTURNING) RANDOMIZE = 1 }
+
+if(RANDOMIZE == 1) { TIMERTURNING = round(random(1,10)) }
+
+# Randomized turning movement:
+
+if(TIMERTURNING >= 5) {}
+
+if(TIMERTURNING <= 5) {}

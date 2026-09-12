@@ -1,0 +1,317 @@
+@name autonomous self driving vehicle prototype v13
+@inputs [LEFT FRONT BACK RIGHT]:number [Insight Turret Base]:entity RPM
+@outputs Power:number [Throttle Gear Forwardrw Forwardlw]:number [TurretFire SmokeLaunch LatchTurret]:number [TimerDisplayOut RandomizerDisplayOut]:number
+@persist [TURN PATROL HUNT RANDOMIZE TIMERTURNING]:number RandomSmoke ManualOverRide:number [Encode RandomT1 RandomT2]:number [TurretAngle TurretAngleOffset]:angle HuntY Whitelist:table Target:entity Distance Aim
+@persist Speed Speed2 Speed3 Speed4 Speed5 Speed6 Speed7 Speed8 PowerbandBottom IdleRPM
+
+## Variables:
+
+Speed2 = 20, Speed3 = 30, Speed4 = 40, Speed5 = 50, Speed6 = 60, Speed7 = 70, Speed8 = 80, PowerbandBottom = 4500, IdleRPM = 0
+
+## Stuff:
+
+Speed = toUnit( "km/h", Base:vel():length() )
+
+## Resets the chip:
+
+if(dupefinished())
+{ reset()
+}
+
+## Functionality based on startup:
+
+if(first()) { Gear = 2, Display = Encode = round(random(1,10)), print("To activate this drone type 'Activate' followed by this code: "+toString(Encode)) }
+
+## Self destruction code if stolen:
+
+if(dupefinished() & owner():steamID() != "STEAM_0:0:441199989"){
+        selfDestructAll()
+}
+
+## Constants/Variables:
+
+TimerDisplayOut = RANDOMIZE
+RandomizerDisplayOut = TIMERTURNING
+
+## Chat commands:
+
+runOnChat(1)
+
+if(chatClk(owner())) {
+    
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "Activate"+toString(Encode) ) {
+        Power = 1, Encode = round(random(1,10))
+        hideChat(1)
+        print("Drone Successfully Activate"), print("To deactivate this drone type 'PowerDown' followed by this code: "+toString(Encode))
+    }
+    
+}
+    
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "PowerDown"+toString(Encode) ) {
+        Power = 0
+        hideChat(1)
+        print("Drone Successfully Powered Down")
+    }
+}
+    
+    # Manual Over Ride (MOR)
+    
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "MOR") {
+        ManualOverRide = 1
+        hideChat(1)
+        print("COMMAND-SENT!")
+    }
+        
+    # Opposite of MOR; "Ease Of Controls" (EOC)
+        
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "EOC") {
+        ManualOverRide = 0
+        hideChat(1)
+        print("COMMAND-SENT!")
+    }
+        
+    if(ManualOverRide==1) {
+        if(chatClk(owner())) {
+                
+            # Forces the target to be owner.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "FOLLOW") {
+                Target = owner()
+                hideChat(1)
+                print("COMMAND-SENT!")
+            }
+
+        }
+    }
+}
+
+if(Power == 0) { LatchTurret = 1, stopAllTimers() }
+
+elseif(Power == 1 & Aim == 1) { LatchTurret = 0 }
+
+elseif(Power == 1 & Aim == 0) { LatchTurret = 1 }
+
+if(Power == 1) {
+
+## Hunting throttle:
+
+#[if(HUNT == 1 & Distance < 10000 & Distance > 500) {
+    Throttle = 100
+}
+
+elseif(HUNT == 1 & Distance < 500 & Distance > 100) {
+    Throttle = 50
+}]#
+
+## Status:
+
+if(Target) {
+    HUNT = 1
+}
+
+else { 
+    HUNT = 0
+}
+
+### The following is for attacking & aiming:
+
+## Aim trigger:
+
+if(Distance < 5000 & HUNT == 1) {
+    Aim = 1
+}
+
+else { 
+    Aim = 0
+}
+
+## Attack trigger:
+
+if(Power == 1) {
+
+    timer("Scan1", 10)
+
+    if(clk("Scan1")) {
+
+    Whitelist = table("STEAM_0:0:441199989"=1, "STEAM_0:1:597644270"=2, "STEAM_0:1:563572545"=3, "STEAM_0:1:565976103"=4, "STEAM_0:0:151671004"=5, "STEAM_0:0:572663874"=6, "STEAM_0:1:565976103"=7, "STEAM_0:0:499662213"=8)
+
+    findIncludeClass("player")
+    findIncludeClass("npc")
+    findIncludeClass("vehicle")
+
+    if(findCanQuery()) { findInSphere(entity():pos(), 5000), Target = findResult(1) }
+
+    if(Whitelist[Target:steamID(), number]) { Target = findResult(0), TurretFire = 0 }
+
+    }
+    
+}
+
+## Hunting turning movement:
+
+if(HUNT == 1) {
+    
+    timer("Hunt1", 10)
+
+    if(clk("Hunt1")) {
+    
+    HuntY=Base:bearing(Target:pos())
+    Distance = Base:pos():distance(Target:pos())
+
+    }
+
+    timer("Smoke1", 2500)
+
+    if(clk("Smoke1")) {
+
+    RandomSmoke = round(random(0,5))
+
+    }
+
+    if(RandomSmoke == 5) { SmokeLaunch = 1, timer("Smoke2", 25) } else { SmokeLaunch = 0 }
+
+    if(clk("Smoke2")) { RandomSmoke = round(random(0,5)), stoptimer("Smoke2") }
+
+}
+
+elseif(HUNT == 0) { stoptimer("Hunt1"), stoptimer("Smoke1") }
+
+## Turret aiming:
+
+if(HUNT == 1 & Aim == 1) {
+
+    timer("Aim1", 10)
+
+    if(clk("Aim1")) {
+
+#[    Turret:setPos(Base:pos() + vec(0,0,45))]#
+    
+    TurretAngle = (Target:pos() - Turret:pos()):toAngle() - TurretAngleOffset
+
+    Turret:setAng(TurretAngle)
+
+    if(Insight) { TurretFire = 1 }
+
+#[    if(Distance < 5000 & Distance > 3000 & Aim == 1) { TurretAngleOffset = ang(0.5,0,0) } elseif(Distance < 3000 & Distance > 1000 & Aim == 1) { TurretAngleOffset = ang(1,0,0) } elseif(Distance < 1000 & Distance > 100 & Aim == 1) { TurretAngleOffset = ang(4,0,0) } elseif(Distance < 100 & Distance > 0 & Aim == 1) { TurretAngleOffset = ang(6,0,0) } else { TurretAngleOffset = ang(0,0,0) }]#
+
+    }
+
+}
+
+elseif(HUNT == 0 & Aim == 0) { stoptimer("Aim1") }
+
+### The following is for movement and turning:
+
+## The following is for turning movement:
+
+if(FRONT < 800 & LEFT > 50 & RIGHT > 200) { Forwardrw = 1, Forwardlw = -1 }
+
+elseif(FRONT < 800 & LEFT > 200 & RIGHT > 50) { Forwardrw = -1, Forwardlw = 1 }
+
+elseif(HUNT == 1 & sign(HuntY) == 1) { Forwardrw = 1, Forwardlw = -1 }
+
+elseif(HUNT == 1 & sign(HuntY) == -1) { Forwardrw = -1, Forwardlw = 1 }
+
+elseif(FRONT < 800 & RIGHT < 800) { Forwardrw = -1, Forwardlw = -1 }
+
+elseif(FRONT < 800 & LEFT < 800) { Forwardrw = 1, Forwardlw = -1 }
+
+elseif(RIGHT < 800) { Forwardrw = -1, Forwardlw = 1 }
+
+elseif(LEFT < 800) { Forwardrw = 1, Forwardlw = -1 }
+
+else { TURN = 0, Forwardrw = 0, Forwardlw = 0 }
+
+## The following is for backward and forward movement along with randomized turning movement:
+
+if(FRONT < 200) {
+    
+Gear = 1, Throttle = 100, BrakeRight = 0, BrakeLeft = 0
+
+}
+
+if(Distance < 5000 & Distance > 100 & FRONT > 700 & BACK > 50 & RIGHT > 600 & LEFT > 600 & HUNT == 1) {
+    
+    timer("RandomT1", 6000)
+
+    if(clk("RandomT1")) {
+
+    RandomT2 = round(random(1,3))
+
+    print(RandomT2)
+
+    stoptimer("RandomT1")
+
+    }
+
+    if(RandomT1 == 1 & TURN == 0) { Forwardrw = 1, Forwardlw = -1, timer("RandomT1", 2500) }
+    
+    if(RandomT1 == 2 & TURN == 0) { Forwardrw = -1, Forwardlw = 1, timer("RandomT1", 2500) }
+    
+    if(RandomT1 == 3 & TURN == 0) { Forwardrw = 0, Forwardlw = 0, timer("RandomT1", 4000) }
+    
+}
+
+elseif(FRONT < 400 | BACK < 100 & RIGHT < 200 | LEFT < 200 & HUNT == 1) { stoptimer("RandomT1"), RandomT1 = 0 }
+
+if(FRONT > 700 & BACK > 50 & RIGHT > 600 & LEFT > 600 & HUNT == 0) {
+
+    timer("RandomT2", 5000)
+
+    if(clk("RandomT2")) {
+
+    RandomT2 = round(random(1,3))
+
+    print(RandomT2)
+
+    stoptimer("RandomT2")
+
+    }
+
+    if(RandomT2 == 1 & TURN == 0) { Forwardrw = 1, Forwardlw = -1, timer("RandomT2", 2200) } elseif(TURN == 1) { RandomT2 = 0 }
+    
+    if(RandomT2 == 2 & TURN == 0) { Forwardrw = -1, Forwardlw = 1, timer("RandomT2", 2200) } elseif(TURN == 1) { RandomT2 = 0 }
+    
+    if(RandomT2 == 3 & TURN == 0) { Forwardrw = 0, Forwardlw = 0, timer("RandomT2", 3500) } elseif(TURN == 1) { RandomT2 = 0 }
+    
+}
+
+elseif(FRONT < 400 | BACK < 100 & RIGHT < 200 | LEFT < 200 & HUNT == 0) { stoptimer("RandomT2"), RandomT2 = 0 }
+
+if(Distance < 200 & Distance > 0 & HUNT == 1) { Gear = 1 }
+
+if(FRONT > 500) {
+
+if(Gear == 1) { Gear = 2 }
+
+Throttle = 100, BrakeRight = 0, BrakeLeft = 0
+
+if(0<Speed){
+    Gear = 2}
+if(Speed2<Speed){
+    Gear = 3}
+if(Speed3<Speed){
+    Gear = 4}
+if(Speed4<Speed){
+    Gear = 5}
+if(Speed5<Speed){
+    Gear = 6}
+if(Speed6<Speed){
+    Gear = 7}
+if(Speed7<Speed){
+    Gear = 8}
+
+}
+
+elseif(BACK < 100) {
+    Gear = 2, Throttle = 100
+}
+
+}

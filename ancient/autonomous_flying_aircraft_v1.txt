@@ -1,0 +1,78 @@
+@name Autonomous Flying Aircraft v1
+@inputs Ammo:entity
+@outputs Speed_Mul Speed F_Ranger_Dist X_VelL Y_VelL Z_VelL Height_Ranger_Dist
+@outputs Ranger_F_L Ranger_F_R Ranger_F_D Roll_Mul Pitch_Mul Random Stuff Stuff_Mul
+@outputs Loop_Mul Loop_Mul_Neg Pitch Roll
+@persist Gravity F_Ranger_Length Height_Ranger_Length Feeler_Dist Counter Engine_Mul
+@persist Pitch_Feeler_Dist Roll_Feeler_Dist Thrust Stuff Engine_Health_Max Base:entity
+@trigger none
+
+if(first() | dupefinished())
+{
+    
+    entity():propInertia(vec(500))
+    entity():propGravity(0)
+    
+    Gravity = 15000
+    
+    #Weight = 500
+    
+    rangerHitEntities(0)
+    rangerHitWater(1)
+    rangerPersist(1)
+    
+    Pitch_Feeler_Dist = 7500
+    Roll_Feeler_Dist  = 10000
+    
+    entity():soundPlay(1,0,"acf_base/engines/turbine_medium.wav")
+    soundVolume(1,0.04)
+    entity():setColor(vec(203))
+    holoCreate(1)
+    holoPos(1,entity():toWorld(vec(0,120,0)))
+    holoParent(1,entity())
+    holoAlpha(1,0)
+    holoEntity(1):setTrails(25,125,0.75,"trails/smoke",vec(200),20)
+    
+    Boost = 500000
+    
+    Engine_Health_Max = entity():acfPropHealthMax()
+    
+    Base = entity()
+
+}
+
+interval(75)
+
+if(changed(entity():acfPropHealth())){Engine_Mul = entity():acfPropHealth()/Engine_Health_Max}
+if(changed(Engine_Mul)){entity():setTrails(50,250,1,"trails/smoke",vec(50,50,50),255*((1 - Engine_Mul)*3)) Thrust = 15000*Engine_Mul}
+
+holoAng(1,entity():toWorld(ang(-entity():angles():pitch(),0,0)))
+holoAng(2,ang(0,holoEntity(1):angles():yaw(),0))
+
+Speed = entity():vel():length()
+Speed_Mul = clamp(-entity():velL():y()/750,0,1)
+
+Loop_Mul     = -clamp(entity():angles():roll()/90,-1,0)
+Loop_Mul_Neg = 1 - Loop_Mul
+
+X_VelL = entity():velL():x()
+Y_VelL = entity():velL():y()
+Z_VelL = entity():velL():z()
+
+Random = randint(1000)
+Stuff  = clamp(Stuff + (Random > 900) - (Random < 100),-5,5)
+Pitch  = clamp(abs(entity():angles():roll()) - 90,0,180)/90
+Roll   = clamp(entity():angles():pitch(),-10,10)
+
+Ranger_F_D = (Pitch_Feeler_Dist - rangerOffset(Pitch_Feeler_Dist,entity():pos(),entity():right() - entity():up()/3):distance())/Pitch_Feeler_Dist
+Ranger_F_L = (Roll_Feeler_Dist - rangerOffset(Roll_Feeler_Dist,entity():pos(),entity():right() + entity():forward()/3):distance())/Roll_Feeler_Dist
+Ranger_F_R = (Roll_Feeler_Dist - rangerOffset(Roll_Feeler_Dist,entity():pos(),entity():right() - entity():forward()/3):distance())/Roll_Feeler_Dist
+
+Pitch_Mul = 550000*(clamp(Ranger_F_D,0,0.25) - 0.05*Loop_Mul_Neg + 0.1*Loop_Mul)
+Roll_Mul  = 500000*(clamp(Ranger_F_L - Ranger_F_R,-0.25,0.25))
+Stuff_Mul = 1 - clamp(abs(Roll_Mul/250000),0,1)
+
+entity():applyAngForce(-entity():angVel()*2500 - ang(Roll_Mul + X_VelL*500 + Stuff*10000*Stuff_Mul + Roll*10000*Pitch,-X_VelL*1000,clamp(Z_VelL*100,-12500,12500) + Pitch_Mul))
+entity():applyForce(vec(0,0,-Gravity) - entity():forward()*X_VelL*10 + entity():right()*(Thrust + Y_VelL*2 + Boost) + entity():up()*(Gravity - Z_VelL*200)*Speed_Mul)
+
+#if(!Ammo:isValid()){Base:propDelete()}

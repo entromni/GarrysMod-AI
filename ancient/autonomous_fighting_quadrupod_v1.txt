@@ -1,0 +1,1033 @@
+@name Autonomous Fighting Quadrupod v1
+
+## Outputs and inputs:
+
+@inputs [Turret Haxis Vaxis Base Head Torso Waist BackLeftFoot BackRightFoot FrontLeftFoot FrontRightFoot]:entity 
+@inputs [CVT Fuel LeftTransfer RightTransfer]:wirelink
+@outputs Power:number [Throttle Gear]:number [TurretFire SmokeLaunch LatchTurret]:number Reset
+@outputs [W A S D]:number
+@model models/sprops/cuboids/height12/size_1/cube_12x12x12.mdl
+@trigger none
+
+### Variables:
+
+@persist HeadYawOffset HeadYawOffsetLockA HeadYawOffsetLock
+
+@persist [RandomizedMovement CanRandomlyTurn RandomlyTurning CanMove]:number
+@persist [TURN HUNT RANDOMIZE TIMERTURNING]:number 
+@persist [RandomSmoke ManualOverRide]:number 
+@persist [Encode RandomT1 RandomT2]:number
+@outputs [FRONT BACK LEFT RIGHT]:number Scanning
+
+@persist [Frequency Length]:number [RangerLeftOffset RangerRightOffset RangerFrontOffset RangerBackOffset]:number
+@persist [HoloScale]:vector [RangerLeftHullSize RangerRightHullSize RangerFrontHullSize RangerBackHullSize]:vector
+@persist [RangerLeft RangerRight RangerFront RangerBack]:ranger [LOSranger]:ranger
+@persist [FilterArray LOSfilter]:array [FilterProps]:number
+@persist [ShowRaycastHolos]:number
+
+@persist [Targeting Movement Follow Aim Protect]:number
+@persist B C
+@persist [Self Ow Insight]:entity
+
+@persist [HaxisYaw HaxisPitch HaxisRoll]:number [VaxisYaw VaxisPitch VaxisRoll]:number
+@persist [VaxisAngle HaxisAngle TurretAng]:angle
+@persist [HuntY FollowHuntY]:number Whitelist:table Target:entity
+
+@persist [TurretAngle TurretAngleOffset]:angle
+@persist [DistanceTargetPitchOffset]:number
+
+@persist Distance
+
+@persist Components:array
+
+@inputs Damage:number
+@outputs DisplayedHealth ScannerLight:vector
+@persist Health MaxHealth Deactivate
+
+@persist CarsCount Rays RayDist MutationRate Layers:array Delta MaxSpeed Generation Import:table StartMutation
+@persist [Chip, User]:entity
+@persist Networks:table ChosenNetwork:table 
+
+#-- core variables
+@persist [Time_delta Time_current] [Down Left]:vector [Ang]:angle
+#-- mech variables
+@persist [Mech_height Mech_speed MSpeed Mech_gait_time Mech_gait_transition] [Mech_pos Mech_vel]:vector [Mech_ang]:angle [Mech_gaits]:table [Mech_gait_last Mech_gait_next]:array [Mech_slammer]:entity
+#-- feet variables
+@persist [FL_a_real]:angle [FL_ent]:entity [FL_groundz FL_state FL_stepz FL_time] [FL_a_last FL_a_next]:quaternion [FL_p_foot FL_p_last FL_p_move FL_p_next FL_p_real]:vector
+@persist [FR_a_real]:angle [FR_ent]:entity [FR_groundz FR_state FR_stepz FR_time] [FR_a_last FR_a_next]:quaternion [FR_p_foot FR_p_last FR_p_move FR_p_next FR_p_real]:vector
+@persist [RL_a_real]:angle [RL_ent]:entity [RL_groundz RL_state RL_stepz RL_time] [RL_a_last RL_a_next]:quaternion [RL_p_foot RL_p_last RL_p_move RL_p_next RL_p_real]:vector
+@persist [RR_a_real]:angle [RR_ent]:entity [RR_groundz RR_state RR_stepz RR_time] [RR_a_last RR_a_next]:quaternion [RR_p_foot RR_p_last RR_p_move RR_p_next RR_p_real]:vector
+
+    ##---## Author: Zan ##---##
+
+## Functionality based on startup:
+
+if(first())
+
+{
+
+MaxHealth = 600
+
+Health = MaxHealth
+
+Self = entity()   
+Ow = owner()
+
+Length = 600
+Frequency = 100
+
+Targeting = 1
+Movement = 1
+ShowRaycastHolos = 0
+
+RangerLeftOffset = 270
+RangerRightOffset = 90
+RangerFrontOffset = 360
+RangerBackOffset = 180
+
+RangerLeftHullSize = vec(1)
+RangerRightHullSize = vec(1)
+RangerFrontHullSize = vec(1)
+RangerBackHullSize = vec(1)
+
+RandomizedMovement = 1
+
+Whitelist = table("STEAM_0:0:441199989"=1)
+
+Components = Self:getConnectedEntities()
+
+FRONT = 600
+BACK = 600
+RIGHT = 600
+LEFT = 600
+
+MSpeed = 0
+
+Distance = 0
+LatchTurret = 1
+Protect = 0
+Follow = 0
+
+RandomT1 = 0
+
+RandomlyTurning = 1
+CanRandomlyTurn = 1
+
+TURN = 0
+
+A = 0, D = 0, C = 0
+
+Gear = 1
+
+HeadYawOffset = 0
+HeadYawOffsetLock = 0
+HeadYawOffsetLockA = 0
+
+Display = Encode = round(random(1,10)), print("To activate this robot type 'Activate' followed by this code: "+toString(Encode))
+
+holoCreate(1)
+holoCreate(2)
+holoCreate(3)
+holoCreate(4)
+holoCreate(8)
+holoCreate(9)
+holoCreate(10)
+holoCreate(11)
+holoCreate(12)
+holoCreate(270)
+
+holoAlpha(4, 0)
+holoAlpha(8, 0)
+holoAlpha(9, 0)
+holoAlpha(10, 0)
+holoAlpha(11, 0)
+holoAlpha(270, 0)
+
+holoColor(4, vec(255,0,255))
+holoColor(8, vec(255,0,0))
+holoColor(9, vec(0,255,255))
+holoColor(10, vec(0,255,0))
+holoColor(12, vec(0,0,255))
+
+holoPos(11, Self:toWorld(vec(0,25,15)))
+holoAng(11, Self:toWorld(ang(0, 90, 0)))
+Head:setPos(holoEntity(11):pos())
+Head:setAng(holoEntity(11):angles())
+holoAng(12, ang(0, 0, 0))
+
+    FilterArray = entity():getConnectedEntities()
+    FilterArray:pushEntity(entity())
+    FilterArray:pushEntity(owner())
+
+Deactivate = 0
+CanMove = 1
+
+    #-- mech variables
+    Mech_pos = entity():pos()
+    Mech_height = 40
+
+    Mech_gaits = table(
+        "walk" = array(
+            0.50,50,   #cycle rate,speed
+            0.00,0.55, #fl start,length
+            0.50,0.55, #fr start,length
+            0.25,0.55, #rl start,length
+            0.75,0.55  #rr start,length
+        ),
+        "gallop" = array(
+            1.00,100,
+            0.00,0.75,
+            0.10,0.75,
+            0.50,0.75,
+            0.60,0.75
+        )
+    )
+
+    Mech_gait_last = Mech_gaits["walk",array]
+    Mech_gait_next = Mech_gaits["walk",array]
+
+    function number gseq(Start,Length,Time) {
+        local Offset = Time - (Start % 1)
+        return inrange(Offset,-1,Length)*inrange(Offset % 1,0,Length)*(Offset % 1)/Length
+    }
+    function string getStepHitSound() {
+        return "^npc/dog/dog_footstep_run0" + randint(1,9) + ".wav"
+    }
+
+    #-- feet variables
+    FL_groundz = 6
+    FR_groundz = 6
+    RL_groundz = 6
+    RR_groundz = 6
+
+    FL_stepz = 0.35
+    FR_stepz = 0.35
+    RL_stepz = 0.25
+    RR_stepz = 0.25
+
+    FL_p_foot = vec(40,40,-Mech_height)
+    FR_p_foot = vec(40,-40,-Mech_height)
+    RL_p_foot = vec(-35,25,-Mech_height)
+    RR_p_foot = vec(-35,-25,-Mech_height)
+
+    FL_p_last = FL_p_next = FL_p_real = holoEntity(12):toWorld(FL_p_foot)
+    FR_p_last = FR_p_next = FR_p_real = holoEntity(12):toWorld(FR_p_foot)
+    RL_p_last = RL_p_next = RL_p_real = holoEntity(12):toWorld(RL_p_foot)
+    RR_p_last = RR_p_next = RR_p_real = holoEntity(12):toWorld(RR_p_foot)
+
+    FL_ent = holoEntity(4)
+    FR_ent = holoEntity(8)
+    RL_ent = holoEntity(9)
+    RR_ent = holoEntity(10)
+
+    #-- core variables
+    Down = vec(0,0,-1)
+    Left = vec(0,1,0)
+
+    holoPos(4,FL_p_real)
+    holoPos(8,FR_p_real)
+    holoPos(9,RL_p_real)
+    holoPos(10,RR_p_real)
+
+#    holoAng(4,FL_a_real)
+#    holoAng(8,FR_a_real)
+#    holoAng(9,RL_a_real)
+#    holoAng(10,RR_a_real)
+
+Self:setAng(ang(0, -90, 0))
+
+BackLeftFoot:setPos(holoEntity(9):toWorld(vec(0,0,0)))
+BackRightFoot:setPos(holoEntity(10):toWorld(vec(0,0,0)))
+
+BackLeftFoot:setAng(holoEntity(9):angles())
+BackRightFoot:setAng(holoEntity(10):angles())
+
+FrontLeftFoot:setPos(holoEntity(4):toWorld(vec(0,0,0)))
+FrontRightFoot:setPos(holoEntity(8):toWorld(vec(0,0,0)))
+
+FrontLeftFoot:setAng(holoEntity(4):angles())
+FrontRightFoot:setAng(holoEntity(8):angles())
+
+holoCreate(5, Haxis:pos(), vec(0.3), Self:toWorld(ang(0, TurretAng:yaw(), 0)))
+holoAlpha(5, 0)
+
+holoCreate(6, Vaxis:pos(), vec(0.3), Turret:angles():setRoll(0))
+holoAlpha(6, 0)
+
+holoParent(6, 5)
+holoParent(5, Self)
+
+Vaxis:parentTo(holoEntity(6))
+Haxis:parentTo(holoEntity(5))
+Turret:parentTo(holoEntity(6))
+
+}
+
+#### Constants: ####---------------------------------------------------------------------------####
+
+#### Try not to edit below, only if you know what your doing! ####------------------------------####
+
+## Resets Chip:
+
+if(dupefinished()) { reset() }
+
+## Self destruction code if stolen:
+
+if(dupefinished() & owner():steamID() != "STEAM_0:0:441199989") { selfDestructAll() }
+if(duped() & owner():steamID() != "STEAM_0:0:441199989") { selfDestructAll() }
+
+#### Chat commands: ####------------------------------------------------------------------------####
+
+runOnChat(1)
+
+if(chatClk(owner())) {
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "Activate"+toString(Encode) ) {
+        Power = 1, Encode = round(random(1,10))
+        hideChat(1)
+        print("Robot successfully activated. To deactivate this robot type 'PowerDown' followed by this code: "+toString(Encode))
+    }
+
+}
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!ActivateAll" ) {
+        Power = 1
+        hideChat(1)
+        print("All robots successfully activated")
+    }
+    
+}
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "PowerDown"+toString(Encode) ) {
+        Power = 0, Encode = round(random(1,10))
+        hideChat(1)
+        print("Robot successfully power-down. To activate this robot type 'Activate' followed by this code: "+toString(Encode))
+    }
+}
+
+    if(chatClk(owner())) {
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!DeactivateAll" ) {
+        Power = 0
+        hideChat(1)
+        print("All robots successfully deactivated")
+    }
+
+}
+
+    if(Power == 1) 
+
+    {
+
+    # Manual Over Ride (MOR)
+    
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!MOR"+toString(Encode)) {
+        ManualOverRide = 1
+        hideChat(1)
+        print("Manual over-ride activated")
+    }
+        
+    # Opposite of MOR: "Ease Of Controls" (EOC)
+        
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!EOC"+toString(Encode)) {
+        ManualOverRide = 0, Follow = 0
+        hideChat(1)
+        print("Manual over-ride de-activated")
+
+    }
+    
+}
+
+if(chatClk(owner())) {
+        
+    # Revives all bots.
+
+    T = owner():lastSaid():explode(" ")
+    if(T[1, string] == "!ReviveAll") {
+    holoUnparent(11)
+        Health = MaxHealth
+    soundPlay(7, 1, "npc/roller/code2.wav")
+    Head:propFreeze(1)
+    Self:propFreeze(1)
+#    LeftFoot:propFreeze(1)
+#    RightFoot:propFreeze(1)
+
+        hideChat(1)
+        print("Successfully revived all bots")
+
+    }
+
+}
+
+    if(ManualOverRide == 1) {
+        if(chatClk(owner())) {
+                
+            # Forces the bot to try and follow you.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!Follow"+toString(Encode)) {
+                Follow = 1
+                hideChat(1)
+                print("Robot is now following you...")
+
+                }
+
+            }
+
+        if(chatClk(owner())) {
+                
+            # Disables following.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!Stop"+toString(Encode)) {
+                Follow = 0
+                hideChat(1)
+                print("Robot has stopped following you...")
+
+                }
+
+            }
+
+        if(chatClk(owner())) {
+                
+            # Disables targeting.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!TargetingOff"+toString(Encode)) {
+                Targeting = 0
+                hideChat(1)
+                print("Successfully disabled targeting")
+
+                }
+
+            }
+
+        if(chatClk(owner())) {
+                
+            # Disables movement.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!MovementOff"+toString(Encode)) {
+                Movement = 0
+                hideChat(1)
+                print("Successfully disabled movement")
+
+            }
+
+        }
+
+        if(chatClk(owner())) {
+                
+            # Kills the bot.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!Die"+toString(Encode)) {
+                Health = 0
+                hideChat(1)
+                print("Successfully killed bot")
+
+            }
+
+        }
+
+        if(chatClk(owner())) {
+                
+            # Kills all bots.
+        
+            T = owner():lastSaid():explode(" ")
+            if(T[1, string] == "!DieAll") {
+                Health = 0
+                hideChat(1)
+                print("Successfully killed all bots")
+
+            }
+
+        }
+    }
+
+}
+
+#################### Below is the code for the AI: #############
+
+### Sounds:
+
+#if(Scanning == 1 & Power == 1) { soundPlay(6, 0, "npc/scanner/combat_scan_loop1.wav") }
+
+### Health and damage:
+
+if(Deactivate != 1) {
+timer("Health", 1200)
+}
+
+if(clk("Health")) {
+
+DisplayedHealth = Health
+
+if(changed(Damage)) { Reset = 1
+soundPlay(3, 1, "npc/dog/dog_growl3.wav")
+} else { Reset = 0 }
+
+Health = Health - Damage
+
+if(Health < 0) { Health = 0 }
+
+if(Health == 0) {
+    Deactivate = 1
+    soundPlay(4, 1, "npc/dog/dog_scared1.wav")
+    Head:propFreeze(0)
+    holoParent(11, Self)
+    Self:propFreeze(0)
+    BackLeftFoot:propFreeze(0)
+    BackRightFoot:propFreeze(0)
+    FrontLeftFoot:propFreeze(0)
+    FrontRightFoot:propFreeze(0)
+    selfDestructAll()
+
+} else {
+    Deactivate = 0
+}
+
+}
+
+if(Deactivate != 0) { Power = 0 }
+
+if(Power == 0) { TurretFire = 0, LatchTurret = 1 }
+
+if(Power == 1 & Deactivate == 0) {
+
+if(!Head:parent()) { timer("SelfParent", 100) }
+if(clk("SelfParent")) { Head:parentTo(holoEntity(11)) stoptimer("SelfParent") }
+
+}
+
+### Targeting: ####---------------------------------------------------------------------------####
+
+if(Targeting == 1 & Power == 1) 
+
+{
+
+## Live target scanning:
+
+    timer("Scan", 180)
+
+    if(clk("Scan")) {
+
+#[    findIncludeClass("acf_engine")]#
+#    findIncludeClass("acf_gearbox")
+#[    findIncludeClass("acf_ammo")]#
+
+    findIncludeClass("player")
+#    findIncludeClass("npc")
+#    findIncludeClass("vehicle")
+
+    findExcludeEntities(Components)
+
+    if(Whitelist[Target:steamID(), number]|Whitelist[Target:owner():steamID(), number]) 
+    { findExcludeEntity(Target), findExcludeEntities(Target:getConnectedEntities()) }
+
+    if(!Target:isAlive() & (Target:isPlayer()|Target:isNPC())) { findClipFromEntity(Target) }
+
+    if(findCanQuery()) { findInSphere(Self:pos(), 4500) } Target = findClosest(Self:pos())
+
+    }
+
+#    HuntY = Base:bearing(Target:pos())
+#
+#    FollowHuntY = Base:bearing(owner():pos())
+
+## Status:
+
+if(Target) { Protect = 1 } else { Protect = 0 }
+
+if(changed(Target) & Target) { soundPlay(5, 10, "npc/dog/dog_alarmed3.wav") }
+
+if(Target|Protect == 1) {
+    ScannerLight = vec(255, 0, 0)
+    HUNT = 1
+    Distance = holoEntity(12):pos():distance(Target:pos())
+}
+
+else { 
+    HUNT = 0
+    ScannerLight = vec(255, 255, 0)
+    if(Follow == 1 & Protect != 1) { Distance = holoEntity(8):pos():distance(owner():pos()) } else { Distance = 0 }
+}
+
+### The following is for attacking & aiming:
+
+## Aim trigger:
+
+if(Distance < 5000 & HUNT == 1|Protect == 1) {
+    Aim = 1
+}
+
+else { 
+    Aim = 0
+}
+
+## Turret aiming:
+
+if(Aim == 1|Follow == 0 & Protect != 0) {
+
+if(Target) 
+
+{
+
+LatchTurret = 0
+
+Insight = LOSranger:entity()
+
+if(Insight&(!Whitelist[Insight:steamID(), number]|!Whitelist[Insight:owner():steamID(), number])) { TurretFire = 1 } else { TurretFire = 0 }
+
+timer("Aim", 300)
+
+if(clk("Aim"))
+
+{
+
+if(Distance > 2000 ) { DistanceTargetPitchOffset = -1 } elseif(Distance < 2000 & Distance > 1000 ) { DistanceTargetPitchOffset = -2 } elseif(Distance < 1000 & Distance > 0 ) { DistanceTargetPitchOffset = -3 } else { DistanceTargetPitchOffset = 0 }
+
+holoCreate(5, Haxis:pos(), vec(0.3), Self:toWorld(ang(0, TurretAng:yaw(), 0)))
+holoAlpha(5, 0)
+
+holoCreate(6, Vaxis:pos(), vec(0.3), Turret:angles():setRoll(0))
+holoAlpha(6, 0)
+
+holoParent(6, 5)
+holoParent(5, Self)
+
+Vaxis:parentTo(holoEntity(6))
+Haxis:parentTo(holoEntity(5))
+Turret:parentTo(holoEntity(6))
+
+GunDir = (Self:pos() - Target:pos())
+
+TurretAng = angnorm(clamp(TurretAng - clamp(heading(vec(), TurretAng, Self:toLocalAxis(GunDir)), -360, 360), ang(-40,-360, 0), ang(40, 360, 0)))
+
+HaxisAngle = Self:toWorld(ang(0,clamp(TurretAng:yaw()+90,-360,360),0))
+holoAng(5, HaxisAngle)
+
+VaxisAngle = ang(-clamp(TurretAng:pitch()-DistanceTargetPitchOffset,-45,45),90,0)
+holoAng(6, holoEntity(5):toWorld(VaxisAngle))
+
+LOSfilter = Turret:getConnectedEntities()
+LOSfilter:pushEntity(Turret)
+
+rangerFilter(LOSfilter)
+LOSranger =  rangerOffsetHull(999999999, Turret:pos(), Turret:forward(), vec(2))
+
+#holoCreate(7)
+#holoPos(7, LOSranger:pos())
+#holoScale(7, vec(2))
+
+
+        }
+
+    }
+
+}
+
+
+else { TurretFire = 0, LatchTurret = 1 }
+
+}
+
+### Raycasts: ####---------------------------------------------------------------------------####
+
+## Update Frequency:
+
+timer("RaycastA", 200)
+
+if(clk("RaycastA")) 
+
+{
+
+### Raycasts: ####---------------------------------------------------------------------------####
+
+## Main:
+
+    rangerFilter(FilterArray)
+        RangerLeft = rangerOffset(entity():toWorld(vec(0,-100,-Mech_height/2)), entity():toWorld(vec(-380,400,Mech_height)))
+    rangerFilter(FilterArray)
+        RangerRight = rangerOffset(entity():toWorld(vec(0,-100,-Mech_height/2)), entity():toWorld(vec(380,400,Mech_height)))
+    rangerFilter(FilterArray)
+        RangerFront = rangerOffset(entity():toWorld(vec(0,0,-Mech_height/2)), entity():toWorld(vec(0,Length,Mech_height)))
+
+LEFT = RangerLeft:distance()
+RIGHT = RangerRight:distance()
+FRONT = RangerFront:distance()
+
+        if(ShowRaycastHolos == 1)
+
+        {
+
+            holoPos(1, RangerLeft:pos())
+            holoPos(2, RangerRight:pos())
+            holoPos(3, RangerFront:pos())
+    
+            holoColor(1, vec(0,0,255))
+            holoColor(2, vec(0,255,0))
+            holoColor(3, vec(255,0,0))    
+
+        }
+
+if(Follow == 1 & Protect != 1) { Distance = holoEntity(12):pos():distance(owner():pos()) }
+
+}
+
+### Movement: ####---------------------------------------------------------------------------####
+
+if(Movement == 1 & Power == 1)
+
+{
+
+if(FRONT > 200) { if(Distance > 1000) { MSpeed = 80 CanMove = 1 } elseif(Distance < 1000 & Distance > 400) { MSpeed = 75 CanMove = 1 } elseif(Distance < 400 & Distance > 300) { MSpeed = 0 CanMove = 0 }
+elseif(Distance < 300 & Distance > 0) { MSpeed = -75 CanMove = 1 } else { MSpeed = 75 CanMove = 1 } } 
+ else { MSpeed = -75 CanMove = 1 }
+
+if(TURN == 1) { CanRandomlyTurn = 0 C = 0 stoptimer("RandomT1") }
+
+if(TURN == 0 & CanRandomlyTurn == 1 & RandomizedMovement == 1) {
+
+if(changed(C)) {
+timer("RandomT1", 100)
+}
+
+if(clk("RandomT1")) {
+RandomT1 = round(random(-3,3))
+
+if(RandomT1 == 1) {
+RandomlyTurning = 1
+
+Mech_ang = ang(0, (holoEntity(12):angles()+ang(0, 90, 0)):yaw(), 0)
+
+    timer("RandomT1", 3300)
+  }
+
+elseif(RandomT1 == -1) {
+RandomlyTurning = 1
+
+Mech_ang = ang(0, (holoEntity(12):angles()-ang(0, 90, 0)):yaw(), 0)
+
+    timer("RandomT1", 3300)
+  }
+
+else {
+RandomlyTurning = 0
+
+    timer("RandomT1", 6000)
+
+    }
+        }
+
+while(C != 5) { C++ }
+
+}
+
+if(FRONT < 150) { TURN = 1, Mech_ang = ang(0, (holoEntity(12):angles()-ang(0, round(random(-1, 1))*90, 0)):yaw(), 0) }
+elseif(RIGHT < 300) { TURN = 1, Mech_ang = ang(0, (holoEntity(12):angles()+ang(0, 15, 0)):yaw(), 0) }
+elseif(LEFT < 300) { TURN = 1, Mech_ang = ang(0, (holoEntity(12):angles()-ang(0, 15, 0)):yaw(), 0) }
+elseif(TURN == 0 & (HUNT == 1|Follow == 1) & RIGHT > 500 & LEFT > 500) { 
+    if(HUNT == 1) { Mech_ang = ang(0, ((holoEntity(12):pos() - Target:pos()):toAngle()-ang(0,180,0)):yaw(), 0) } 
+    if(Follow == 1) { Mech_ang = ang(0, ((holoEntity(12):pos() - owner():pos()):toAngle()-ang(0,180,0)):yaw(), 0) } 
+    }
+else
+
+{ 
+
+TURN = 0
+
+CanRandomlyTurn = 1
+
+}
+
+timer("movementA", 220)
+
+if(clk("movementA")) 
+{
+
+if(HeadYawOffset != 50 & HeadYawOffsetLockA == 0 & HeadYawOffsetLock != 1) { HeadYawOffset++ }
+elseif(HeadYawOffset != -50 & HeadYawOffsetLock != 1) { HeadYawOffsetLockA = 1, HeadYawOffset-- }
+elseif(HeadYawOffset == -50 & HeadYawOffsetLock != 1) { HeadYawOffsetLockA = 0 }
+
+Self:setPos(holoEntity(12):pos())
+Self:setAng(ang(0, holoEntity(12):angles():yaw()-90, 0))
+holoPos(11, Self:toWorld(vec(0,25,15)))
+holoAng(11, Self:toWorld(ang(0,90,0))-ang(0,HeadYawOffset,0))
+
+    Time_delta = curtime() - Time_current
+    Time_current = curtime()
+
+    if (Time_delta > 1) {
+        exit()
+    }
+
+    #-- gait sequencer
+#    if (Mech_gait_transition < 1) {
+        Mech_gait_transition = min(Mech_gait_transition + Time_delta/2,1)
+
+        Mech_gait_time += ((1 - Mech_gait_transition)*Mech_gait_last[1,number] + Mech_gait_transition*Mech_gait_next[1,number])*Time_delta
+
+        FL_time = gseq((1 - Mech_gait_transition)*Mech_gait_last[3,number] + Mech_gait_transition*Mech_gait_next[3,number],(1 - Mech_gait_transition)*Mech_gait_last[4,number] + Mech_gait_transition*Mech_gait_next[4,number],Mech_gait_time)
+        FR_time = gseq((1 - Mech_gait_transition)*Mech_gait_last[5,number] + Mech_gait_transition*Mech_gait_next[5,number],(1 - Mech_gait_transition)*Mech_gait_last[6,number] + Mech_gait_transition*Mech_gait_next[6,number],Mech_gait_time)
+        RL_time = gseq((1 - Mech_gait_transition)*Mech_gait_last[7,number] + Mech_gait_transition*Mech_gait_next[7,number],(1 - Mech_gait_transition)*Mech_gait_last[8,number] + Mech_gait_transition*Mech_gait_next[8,number],Mech_gait_time)
+        RR_time = gseq((1 - Mech_gait_transition)*Mech_gait_last[9,number] + Mech_gait_transition*Mech_gait_next[9,number],(1 - Mech_gait_transition)*Mech_gait_last[10,number] + Mech_gait_transition*Mech_gait_next[10,number],Mech_gait_time)
+
+#        Mech_speed = (1 - Mech_gait_transition)*Mech_gait_last[2,number] + Mech_gait_transition*Mech_gait_next[2,number]
+#    }
+#    else {
+#        Mech_gait_time += Mech_gait_next[1,number]*Time_delta
+#
+#        FL_time = gseq(Mech_gait_next[3,number],Mech_gait_next[4,number],Mech_gait_time)
+#        FR_time = gseq(Mech_gait_next[5,number],Mech_gait_next[6,number],Mech_gait_time)
+#        RL_time = gseq(Mech_gait_next[7,number],Mech_gait_next[8,number],Mech_gait_time)
+#        RR_time = gseq(Mech_gait_next[9,number],Mech_gait_next[10,number],Mech_gait_time)
+
+#        Mech_speed = Mech_gait_next[2,number]
+        Mech_speed = MSpeed
+#    }
+    if (Mech_gait_time > 1) {
+        Mech_gait_time--
+    }
+
+    #-- stepgen
+    if (FL_time) {
+        if (!FL_state) {
+            soundStop("FL_step")
+            FL_a_last = FL_a_next
+            FL_p_last = FL_p_next
+            FL_p_move = Mech_vel
+            FL_state = 1
+        }
+            rangerFilter(FilterArray)
+        local Check = rangerOffset(Mech_height*2,rangerOffset(Mech_pos,toWorld(FL_p_foot,Ang,Mech_pos,Mech_ang) + FL_p_move):position(),Down)
+        if (Check:hit()) {
+            local Normal = Check:hitNormal()
+            FL_p_next = Check:position() + Normal*FL_groundz
+            local Line = FL_p_next - FL_p_last
+            if (Line:length() > FL_groundz) {
+                FL_p_real = mix(bezier(FL_p_last,mix(FL_p_next,FL_p_last,0.85) + Line:toAngle():up()*Line:length()*FL_stepz,FL_p_next,FL_time),FL_p_real,FL_time)
+                FL_a_next = quat(Normal:cross(FL_p_move):normalized():cross(Normal),Normal)
+                FL_a_real = slerp(quat(FL_a_real),slerp(FL_a_last,FL_a_next*qRotation(Left,sin(180*FL_time)*45),FL_time),FL_time):toAngle()
+
+                if (FL_state == 1) {
+                    if (FL_ent) {
+                        FL_ent:soundPlay("FL_move",0,"^ambient/machines/pneumatic_drill_" + randint(1,2) + ".wav")
+                    }
+                    FL_state = 2
+                }
+
+                soundVolume("FL_move",0.75 - 0.75*FL_time)
+                soundPitch("FL_move",50 - 10*FL_time)
+            }
+        }
+    }
+    elseif (FL_state) {
+        if (FL_state == 2) {
+            if (FL_ent) {
+                soundStop("FL_move")
+                FL_ent:soundPlay("FL_step",0,getStepHitSound())
+            }
+            Mech_slammer:propManipulate(FL_p_next,Ang,0,0,0)
+            Mech_slammer:applyForce(Down*600000)
+        }
+        FL_p_real = FL_p_next
+        FL_a_real = FL_a_next:toAngle()
+        FL_state = 0
+    }
+    #-- stepgen
+    if (FR_time) {
+        if (!FR_state) {
+            soundStop("FR_step")
+            FR_a_last = FR_a_next
+            FR_p_last = FR_p_next
+            FR_p_move = Mech_vel
+            FR_state = 1
+        }
+            rangerFilter(FilterArray)
+        local Check = rangerOffset(Mech_height*2,rangerOffset(Mech_pos,toWorld(FR_p_foot,Ang,Mech_pos,Mech_ang) + FR_p_move):position(),Down)
+        if (Check:hit()) {
+            local Normal = Check:hitNormal()
+            FR_p_next = Check:position() + Normal*FR_groundz
+            local Line = FR_p_next - FR_p_last
+            if (Line:length() > FR_groundz) {
+                FR_p_real = mix(bezier(FR_p_last,mix(FR_p_next,FR_p_last,0.85) + Line:toAngle():up()*Line:length()*FR_stepz,FR_p_next,FR_time),FR_p_real,FR_time)
+                FR_a_next = quat(Normal:cross(FR_p_move):normalized():cross(Normal),Normal)
+                FR_a_real = slerp(quat(FR_a_real),slerp(FR_a_last,FR_a_next*qRotation(Left,sin(180*FR_time)*45),FR_time),FR_time):toAngle()
+
+                if (FR_state == 1) {
+                    if (FR_ent) {
+                        FR_ent:soundPlay("FR_move",0,"^ambient/machines/pneumatic_drill_" + randint(1,2) + ".wav")
+                    }
+                    FR_state = 2
+                }
+
+                soundVolume("FR_move",0.75 - 0.75*FR_time)
+                soundPitch("FR_move",50 - 10*FR_time)
+            }
+        }
+    }
+    elseif (FR_state) {
+        if (FR_state == 2) {
+            if (FR_ent) {
+                soundStop("FR_move")
+                FR_ent:soundPlay("FR_step",0,getStepHitSound())
+            }
+            Mech_slammer:propManipulate(FR_p_next,Ang,0,0,0)
+            Mech_slammer:applyForce(Down*600000)
+        }
+        FR_p_real = FR_p_next
+        FR_a_real = FR_a_next:toAngle()
+        FR_state = 0
+    }
+    #-- stepgen
+    if (RL_time) {
+        if (!RL_state) {
+            soundStop("RL_step")
+            RL_a_last = RL_a_next
+            RL_p_last = RL_p_next
+            RL_p_move = Mech_vel
+            RL_state = 1
+        }
+            rangerFilter(FilterArray)
+        local Check = rangerOffset(Mech_height*2,rangerOffset(Mech_pos,toWorld(RL_p_foot,Ang,Mech_pos,Mech_ang) + RL_p_move):position(),Down)
+        if (Check:hit()) {
+            local Normal = Check:hitNormal()
+            RL_p_next = Check:position() + Normal*RL_groundz
+            local Line = RL_p_next - RL_p_last
+            if (Line:length() > RL_groundz) {
+                RL_p_real = mix(bezier(RL_p_last,mix(RL_p_next,RL_p_last,0.85) + Line:toAngle():up()*Line:length()*RL_stepz,RL_p_next,RL_time),RL_p_real,RL_time)
+                RL_a_next = quat(Normal:cross(RL_p_move):normalized():cross(Normal),Normal)
+                RL_a_real = slerp(quat(RL_a_real),slerp(RL_a_last,RL_a_next*qRotation(Left,sin(180*RL_time)*45),RL_time),RL_time):toAngle()
+
+                if (RL_state == 1) {
+                    if (RL_ent) {
+                        RL_ent:soundPlay("RL_move",0,"^ambient/machines/pneumatic_drill_" + randint(1,2) + ".wav")
+                    }
+                    RL_state = 2
+                }
+
+                soundVolume("RL_move",0.75 - 0.75*RL_time)
+                soundPitch("RL_move",50 - 10*RL_time)
+            }
+        }
+    }
+    elseif (RL_state) {
+        if (RL_state == 2) {
+            if (RL_ent) {
+                soundStop("RL_move")
+                RL_ent:soundPlay("RL_step",0,getStepHitSound())
+            }
+            Mech_slammer:propManipulate(RL_p_next,Ang,0,0,0)
+            Mech_slammer:applyForce(Down*600000)
+        }
+        RL_p_real = RL_p_next
+        RL_a_real = RL_a_next:toAngle()
+        RL_state = 0
+    }
+    #-- stepgen
+    if (RR_time) {
+        if (!RR_state) {
+            soundStop("RR_step")
+            RR_a_last = RR_a_next
+            RR_p_last = RR_p_next
+            RR_p_move = Mech_vel
+            RR_state = 1
+        }
+            rangerFilter(FilterArray)
+        local Check = rangerOffset(Mech_height*2,rangerOffset(Mech_pos,toWorld(RR_p_foot,Ang,Mech_pos,Mech_ang) + RR_p_move):position(),Down)
+        if (Check:hit()) {
+            local Normal = Check:hitNormal()
+            RR_p_next = Check:position() + Normal*RR_groundz
+            local Line = RR_p_next - RR_p_last
+            if (Line:length() > RR_groundz) {
+                RR_p_real = mix(bezier(RR_p_last,mix(RR_p_next,RR_p_last,0.85) + Line:toAngle():up()*Line:length()*RR_stepz,RR_p_next,RR_time),RR_p_real,RR_time)
+                RR_a_next = quat(Normal:cross(RR_p_move):normalized():cross(Normal),Normal)
+                RR_a_real = slerp(quat(RR_a_real),slerp(RR_a_last,RR_a_next*qRotation(Left,sin(180*RR_time)*45),RR_time),RR_time):toAngle()
+
+                if (RR_state == 1) {
+                    if (RR_ent) {
+                        RR_ent:soundPlay("RR_move",0,"^ambient/machines/pneumatic_drill_" + randint(1,2) + ".wav")
+                    }
+                    RR_state = 2
+                }
+
+                soundVolume("RR_move",0.75 - 0.75*RR_time)
+                soundPitch("RR_move",50 - 10*RR_time)
+            }
+        }
+    }
+    elseif (RR_state) {
+        if (RR_state == 2) {
+            if (RR_ent) {
+                soundStop("RR_move")
+                RR_ent:soundPlay("RR_step",0,getStepHitSound())
+            }
+            Mech_slammer:propManipulate(RR_p_next,Ang,0,0,0)
+            Mech_slammer:applyForce(Down*600000)
+        }
+        RR_p_real = RR_p_next
+        RR_a_real = RR_a_next:toAngle()
+        RR_state = 0
+    }
+
+    #-- mech
+    Mech_pos = (FL_p_real + FR_p_real + RL_p_real + RR_p_real)/4 - Down*Mech_height
+
+    local Dir = entity():pos() - Mech_pos
+#    Mech_ang = slerp(quat(Mech_ang),quat(Dir:setZ(0),-Down),0.05):toAngle()
+    Mech_vel = Mech_ang:forward()*Mech_speed
+
+    holoPos(12,Mech_pos)
+    holoAng(12,Mech_ang)
+
+    holoPos(4,FL_p_real)
+    holoPos(8,FR_p_real)
+    holoPos(9,RL_p_real)
+    holoPos(10,RR_p_real)
+
+    holoAng(4,FL_a_real)
+    holoAng(8,FR_a_real)
+    holoAng(9,RL_a_real)
+    holoAng(10,RR_a_real)
+
+    local Dist = Dir:length() > 300
+    if (changed(Dist)) {
+        Mech_gait_transition = 0
+        Mech_gait_last = Mech_gait_next
+        if (Dist) { Mech_gait_next = Mech_gaits["gallop",array] } else { Mech_gait_next = Mech_gaits["walk",array] }
+        print("change")
+    }
+
+#    if (!Mech_slammer) {
+#        Mech_slammer = propSpawn("models/hunter/plates/plate.mdl",vec(),ang(),0)
+#        Mech_slammer:setMass(600)
+#        Mech_slammer:propPhysicalMaterial("gmod_silent")
+#        Mech_slammer:setAlpha(0)
+#        rangerFilter(Mech_slammer)
+#        rangerPersist(1)
+#    }
+
+BackLeftFoot:setPos(holoEntity(9):toWorld(vec(0,0,0)))
+BackRightFoot:setPos(holoEntity(10):toWorld(vec(0,0,0)))
+
+BackLeftFoot:setAng(holoEntity(9):angles())
+BackRightFoot:setAng(holoEntity(10):angles())
+
+FrontLeftFoot:setPos(holoEntity(4):toWorld(vec(0,0,0)))
+FrontRightFoot:setPos(holoEntity(8):toWorld(vec(0,0,0)))
+
+FrontLeftFoot:setAng(holoEntity(4):angles())
+FrontRightFoot:setAng(holoEntity(8):angles())
+
+}
+
+}
